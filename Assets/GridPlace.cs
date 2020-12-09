@@ -36,17 +36,23 @@ public class GridPlace : MonoBehaviour
         {
             if(playButtonClicked)
             { 
-                if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
-                {
-                    Transform trans = placementIndicator.transform;
-                    trans.Rotate(-90, 0, 0);
-                    GameObject obj = Instantiate(ObjectToPlace, trans.position, trans.rotation);
                 
-                    //Vector3 objectSize = Vector3.Scale(transform.localScale, obj.bounds.size);
+				if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
+				{
+					Transform trans = placementIndicator.transform;
+					trans.Translate (new Vector3 (0, -0.45f, -0.0f));
+					trans.Rotate(-90, 0, 0);
+					GameObject obj = Instantiate(ObjectToPlace, trans.position, trans.rotation);
 
-                    done = true;
-                    placementIndicator.Enable(false);
-                }
+					//obj.transform = temp;
+					gameLogic.InitGrid (trans.position, 1.3f, trans.rotation, zeroToPlace);
+
+					//Vector3 objectSize = Vector3.Scale(transform.localScale, obj.bounds.size);
+					//Vector3 objectSize = Vector3.Scale(transform.localScale, obj.mesh.bounds.size);
+
+					done = true;
+					placementIndicator.Enable(false);
+				}
             }
         }
         else
@@ -71,10 +77,11 @@ public class GridPlace : MonoBehaviour
             if (hits.Count > 0)
             {
                 GameObject obj = Instantiate(crossToPlace, hits[0].pose.position, hits[0].pose.rotation);
+                obj.transform.Translate (new Vector3 (0, -0.3f, -0.0f));
                 obj.transform.Rotate(-90, 0, 0);
+                gameLogic.PlaceZeroOrCross (obj, true);
             }
 
-            gameLogic.PlaceZeroOrCross (hits[0].pose.position, true);
             return true;
         }
 
@@ -91,15 +98,17 @@ public class GridPlace : MonoBehaviour
             if (hits.Count > 0)
             {
                 GameObject obj = Instantiate(zeroToPlace, hits[0].pose.position, hits[0].pose.rotation);
+                obj.transform.Translate (new Vector3 (0, -0.25f, -0.0f));
                 obj.transform.Rotate(-90, 0, 0);
+                gameLogic.PlaceZeroOrCross (obj, false);
             }
 
-            gameLogic.PlaceZeroOrCross (hits[0].pose.position, false);
             return true;
         }
 
         return false;
     }
+	
     public void PlayButtonClicked()
     {
         playButtonClicked = true;
