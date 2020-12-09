@@ -8,7 +8,7 @@ public class PlacementIndicator : MonoBehaviour
 {
     private ARRaycastManager rayManager;
     private GameObject visual;
-    private bool enabled = true;
+    private bool enabled = false;
 
     private void Start()
     {

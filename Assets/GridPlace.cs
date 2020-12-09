@@ -16,6 +16,7 @@ public class GridPlace : MonoBehaviour
     public GameObject crossToPlace;
     public GameObject zeroToPlace;
 
+    public bool playButtonClicked = false;
     public bool done = false;
 
     // Start is called before the first frame update
@@ -33,16 +34,19 @@ public class GridPlace : MonoBehaviour
 
         if (!done)
         {
-            if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
-            {
-                Transform trans = placementIndicator.transform;
-                trans.Rotate(-90, 0, 0);
-                GameObject obj = Instantiate(ObjectToPlace, trans.position, trans.rotation);
+            if(playButtonClicked)
+            { 
+                if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
+                {
+                    Transform trans = placementIndicator.transform;
+                    trans.Rotate(-90, 0, 0);
+                    GameObject obj = Instantiate(ObjectToPlace, trans.position, trans.rotation);
                 
-                //Vector3 objectSize = Vector3.Scale(transform.localScale, obj.bounds.size);
+                    //Vector3 objectSize = Vector3.Scale(transform.localScale, obj.bounds.size);
 
-                done = true;
-                placementIndicator.Enable(false);
+                    done = true;
+                    placementIndicator.Enable(false);
+                }
             }
         }
         else
@@ -95,5 +99,9 @@ public class GridPlace : MonoBehaviour
         }
 
         return false;
+    }
+    public void PlayButtonClicked()
+    {
+        playButtonClicked = true;
     }
 }
