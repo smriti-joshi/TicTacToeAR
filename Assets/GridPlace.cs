@@ -24,6 +24,7 @@ public class GridPlace : MonoBehaviour
 
     public GameObject gameOverWindow;
     public GameObject startWindow;
+    public GameObject Camera;
 
     //Boolean variables
     public bool playButtonClicked = false; // Play button from start menu
@@ -142,6 +143,8 @@ public class GridPlace : MonoBehaviour
         {
             gameOverWindow.SetActive(true);
             gameOverDisplayed = true;
+
+            Camera.SetActive(false);
         }
         
     }
@@ -161,7 +164,7 @@ public class GridPlace : MonoBehaviour
         //Hide the gameover window
         gameOverWindow.SetActive(false);
         gameOverDisplayed = false;
-
+        Camera.SetActive(true);
     }
 
     public void ReturnToMenu()
@@ -172,6 +175,7 @@ public class GridPlace : MonoBehaviour
         playButtonClicked = false;
         PlayAgain();
         startWindow.SetActive(true);
+        Camera.SetActive(false);
     }
 
 
