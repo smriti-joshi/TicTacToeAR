@@ -9,30 +9,42 @@ public class GridPlace : MonoBehaviour
     private ARRaycastManager rayManager;
     private PlacementIndicator placementIndicator;
 
-    private bool isCross = true;
+
     private GameLogic gameLogic = GameLogic.GetInstance();
 
     public GameObject ObjectToPlace;
     public GameObject crossToPlace;
     public GameObject zeroToPlace;
 
-    public bool playButtonClicked = false;
-    public bool done = false;
+    public GameObject[] ZerosOrCross = new GameObject[10];
+    int iter ;
+
+    public GameObject gameOverWindow;
+
+    //Boolean variables
+    public bool playButtonClicked = false; // Play button from start menu
+    public bool GridPlaced = false;        // Grid is placed
+    public bool gameOverDisplayed = false; // Game over window is displayed
+    private bool isCross = true;
 
     // Start is called before the first frame update
     void Start()
     {
         rayManager = FindObjectOfType<ARRaycastManager>();
         placementIndicator = FindObjectOfType<PlacementIndicator>();
+        iter = 0;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (gameLogic.IsGameOver ())
+        if (gameLogic.IsGameOver())
+        {
+            ShowGameOverWindow();
             return;
+        }
 
-        if (!done)
+        if (!GridPlaced)
         {
             if(playButtonClicked)
             { 
@@ -50,7 +62,7 @@ public class GridPlace : MonoBehaviour
 					//Vector3 objectSize = Vector3.Scale(transform.localScale, obj.bounds.size);
 					//Vector3 objectSize = Vector3.Scale(transform.localScale, obj.mesh.bounds.size);
 
-					done = true;
+					GridPlaced = true;
 					placementIndicator.Enable(false);
 				}
             }
@@ -76,10 +88,12 @@ public class GridPlace : MonoBehaviour
 
             if (hits.Count > 0)
             {
-                GameObject obj = Instantiate(crossToPlace, hits[0].pose.position, hits[0].pose.rotation);
-                obj.transform.Translate (new Vector3 (0, -0.3f, -0.0f));
-                obj.transform.Rotate(-90, 0, 0);
-                gameLogic.PlaceZeroOrCross (obj, true);
+                //GameObject obj = Instantiate(crossToPlace, hits[0].pose.position, hits[0].pose.rotation);
+                ZerosOrCross[iter] = Instantiate(crossToPlace, hits[0].pose.position, hits[0].pose.rotation);
+                ZerosOrCross[iter].transform.Translate (new Vector3 (0, -0.3f, -0.0f));
+                ZerosOrCross[iter].transform.Rotate(-90, 0, 0);
+                gameLogic.PlaceZeroOrCross (ZerosOrCross[iter], true);
+                iter++;
             }
 
             return true;
@@ -97,10 +111,12 @@ public class GridPlace : MonoBehaviour
 
             if (hits.Count > 0)
             {
-                GameObject obj = Instantiate(zeroToPlace, hits[0].pose.position, hits[0].pose.rotation);
-                obj.transform.Translate (new Vector3 (0, -0.25f, -0.0f));
-                obj.transform.Rotate(-90, 0, 0);
-                gameLogic.PlaceZeroOrCross (obj, false);
+                //GameObject obj = Instantiate(zeroToPlace, hits[0].pose.position, hits[0].pose.rotation);
+                ZerosOrCross[iter] = Instantiate(zeroToPlace, hits[0].pose.position, hits[0].pose.rotation);
+                ZerosOrCross[iter].transform.Translate (new Vector3 (0, -0.25f, -0.0f));
+                ZerosOrCross[iter].transform.Rotate(-90, 0, 0);
+                gameLogic.PlaceZeroOrCross (ZerosOrCross[iter], false);
+                iter++;
             }
 
             return true;
@@ -109,8 +125,40 @@ public class GridPlace : MonoBehaviour
         return false;
     }
 	
+    // Starts the game when play button is clicked
     public void PlayButtonClicked()
     {
         playButtonClicked = true;
     }
+
+    // Shows the game over window
+    public void ShowGameOverWindow()
+    {
+        if(!gameOverDisplayed)
+        {
+            gameOverWindow.SetActive(true);
+            gameOverDisplayed = true;
+        }
+        
+    }
+    public void PlayAgain()
+    {
+        iter = 0;
+
+        //To destroy the zeros and crosses
+        for (int j = 0; j < ZerosOrCross.Length; j++)
+        {
+            Destroy(ZerosOrCross[j]);
+        }
+
+        //Update params in gamelogic
+        gameLogic.RestartGame();
+
+        //Hide the gameover window
+        gameOverWindow.SetActive(false);
+        gameOverDisplayed = false;
+
+    }
+
+
 }

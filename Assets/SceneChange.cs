@@ -14,10 +14,5 @@ public class SceneChange : MonoBehaviour
     public void SampleScene()
     {
         SceneManager.LoadScene("Assets/Scenes/SampleScene");
-        //panel.gameObject.SetActive(false);
-        //Canvas.gameObject.SetActive(false);
-
-
-        //Application.LoadLevel("Scenes/SampleScene");
     }
 }

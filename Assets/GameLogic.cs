@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
-
+using UnityEngine.UI;
 
 enum Player
 {
@@ -16,6 +16,7 @@ enum Player
 
 public class Cell
 {
+
     private Player player;
     private Vector3 center;
 
@@ -43,7 +44,7 @@ public class GameLogic
     private GameObject zeroToPlace;
     private Quaternion rotation { get; set; }
 
-    private int round = 0;
+    private int round = 1;
     private bool isGameOver = false;
     private float cellWidth;
 
@@ -81,7 +82,7 @@ public class GameLogic
 
     public void PlaceZeroOrCross(GameObject obj, bool isCross)
     {
-        if (round >= 9)
+        if (round > 9)
         {
             isGameOver = true;
             return;
@@ -116,6 +117,17 @@ public class GameLogic
         obj.transform.SetPositionAndRotation (cell.Center + offset, rot);
         obj.transform.RotateAround (grid[4].Center, Vector3.up, rot.eulerAngles.y);
         cell.Center = obj.transform.position;
+    }
+
+    public void RestartGame()
+    {
+        isGameOver = false;
+        round = 1;
+
+        foreach (Cell cell in grid)
+        {
+            cell.Player = Player.Empty;
+        }
     }
 }
 
