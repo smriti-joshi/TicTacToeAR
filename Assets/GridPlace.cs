@@ -16,10 +16,14 @@ public class GridPlace : MonoBehaviour
     public GameObject crossToPlace;
     public GameObject zeroToPlace;
 
+    private GameObject Grid;
+
+    //Zeros and Crosses Object
     public GameObject[] ZerosOrCross = new GameObject[10];
     int iter ;
 
     public GameObject gameOverWindow;
+    public GameObject startWindow;
 
     //Boolean variables
     public bool playButtonClicked = false; // Play button from start menu
@@ -54,10 +58,10 @@ public class GridPlace : MonoBehaviour
 					Transform trans = placementIndicator.transform;
 					trans.Translate (new Vector3 (0, -0.45f, -0.0f));
 					trans.Rotate(-90, 0, 0);
-					GameObject obj = Instantiate(ObjectToPlace, trans.position, trans.rotation);
-
-					//obj.transform = temp;
-					gameLogic.InitGrid (trans.position, 1.3f, trans.rotation, zeroToPlace);
+					//GameObject obj = Instantiate(ObjectToPlace, trans.position, trans.rotation);
+                    Grid = Instantiate(ObjectToPlace, trans.position, trans.rotation);
+                    //obj.transform = temp;
+                    gameLogic.InitGrid (trans.position, 1.3f, trans.rotation, zeroToPlace);
 
 					//Vector3 objectSize = Vector3.Scale(transform.localScale, obj.bounds.size);
 					//Vector3 objectSize = Vector3.Scale(transform.localScale, obj.mesh.bounds.size);
@@ -158,6 +162,16 @@ public class GridPlace : MonoBehaviour
         gameOverWindow.SetActive(false);
         gameOverDisplayed = false;
 
+    }
+
+    public void ReturnToMenu()
+    {
+        GridPlaced = false;
+        Destroy(Grid);
+
+        playButtonClicked = false;
+        PlayAgain();
+        startWindow.SetActive(true);
     }
 
 
