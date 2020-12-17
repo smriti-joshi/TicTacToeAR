@@ -4,6 +4,13 @@ using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 
+
+public enum Mode
+{
+    Single, MultiLocal, MultiOnline
+}
+
+
 public class GridPlace : MonoBehaviour
 {
     private ARRaycastManager rayManager;
@@ -15,6 +22,7 @@ public class GridPlace : MonoBehaviour
     public GameObject ObjectToPlace;
     public GameObject crossToPlace;
     public GameObject zeroToPlace;
+    public Mode mode;
 
     private GameObject Grid;
 
@@ -30,7 +38,7 @@ public class GridPlace : MonoBehaviour
     public bool playButtonClicked = false; // Play button from start menu
     public bool GridPlaced = false;        // Grid is placed
     public bool gameOverDisplayed = false; // Game over window is displayed
-    private bool isCross = true;
+    private bool isPlayerOne = true;
 
     // Start is called before the first frame update
     void Start()
@@ -39,6 +47,7 @@ public class GridPlace : MonoBehaviour
         placementIndicator = FindObjectOfType<PlacementIndicator>();
         audioData = GetComponents<AudioSource>();
         iter = 0;
+        mode = Mode.MultiLocal;
     }
 
     // Update is called once per frame
@@ -71,68 +80,71 @@ public class GridPlace : MonoBehaviour
         }
         else
         {
-            if (isCross)
-            {                
-                isCross = !UpdateCross();
-            } else
+            if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
             {
-                isCross = UpdateZero();
+                Vector2Int selectedCell = PlayRound();
+
+                if (selectedCell.x != -1 || selectedCell.y != -1)
+                {
+                    GameObject obj = isPlayerOne ? crossToPlace : zeroToPlace;
+                    ZerosOrCross[iter] = Instantiate (obj, gameLogic.Grid[selectedCell.x, selectedCell.y].Center, new Quaternion ());
+                    ZerosOrCross[iter].transform.Rotate (-90, 0, 0);
+                    gameLogic.PlaceZeroOrCross (selectedCell, isPlayerOne);
+
+                    audioData[0].Play (0);
+                    iter++;
+                    isPlayerOne = !isPlayerOne;
+                }
+
             }
         }
     }
 
-    private bool UpdateCross()
+    private Vector2Int PlayRound ()
     {
-        if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
+        if (isPlayerOne)
+            return PlayRoundLocal ();
+
+        // else player two
+        Vector2Int cell = new Vector2Int(-1, -1);
+
+        switch (mode)
         {
-            List<ARRaycastHit> hits = new List<ARRaycastHit>();
-            rayManager.Raycast(Input.touches[0].position, hits, TrackableType.Planes);
-
-            if (hits.Count > 0)
-            {
-                //GameObject obj = Instantiate(crossToPlace, hits[0].pose.position, hits[0].pose.rotation);
-                ZerosOrCross[iter] = Instantiate(crossToPlace, hits[0].pose.position, hits[0].pose.rotation);
-                ZerosOrCross[iter].transform.Translate (new Vector3 (0, -0.3f, -0.0f));
-                ZerosOrCross[iter].transform.Rotate(-90, 0, 0);
-                bool successful = gameLogic.PlaceZeroOrCross (ZerosOrCross[iter], true);
-
-                if (!successful)
-                    return false;
-
-                audioData[0].Play(0);
-                iter++;
-            }
-
-            return true;
+            case Mode.Single:
+                cell = PlayRoundAI ();
+                break;
+            case Mode.MultiLocal:
+                cell = PlayRoundLocal ();
+                break;
+            case Mode.MultiOnline:
+                cell = PlayRoundOnline();
+                break;
         }
 
-        return false;
+        return cell;
     }
 
-    private bool UpdateZero()
+    private Vector2Int PlayRoundLocal ()
+    {        
+        List<ARRaycastHit> hits = new List<ARRaycastHit>();
+        rayManager.Raycast(Input.touches[0].position, hits, TrackableType.Planes);
+
+        if (hits.Count > 0)
+            return gameLogic.GetClosestCell (hits[0].pose.position - new Vector3(0, 0.2f, 0)); // compensate for the offset of the grid
+
+        return new Vector2Int(-1, -1);
+    }
+
+    private Vector2Int PlayRoundAI ()
     {
-        if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
-        {
-            List<ARRaycastHit> hits = new List<ARRaycastHit>();
-            rayManager.Raycast(Input.touches[0].position, hits, TrackableType.Planes);
-
-            if (hits.Count > 0)
-            {
-                //GameObject obj = Instantiate(zeroToPlace, hits[0].pose.position, hits[0].pose.rotation);
-                ZerosOrCross[iter] = Instantiate(zeroToPlace, hits[0].pose.position, hits[0].pose.rotation);
-                ZerosOrCross[iter].transform.Translate (new Vector3 (0, -0.25f, -0.0f));
-                ZerosOrCross[iter].transform.Rotate(-90, 0, 0);
-                gameLogic.PlaceZeroOrCross (ZerosOrCross[iter], false);
-                audioData[0].Play(0);
-                iter++;
-            }
-
-            return true;
-        }
-
-        return false;
+        return new Vector2Int (-1, -1);
     }
-	
+
+    private Vector2Int PlayRoundOnline ()
+    {
+        return new Vector2Int (-1, -1);
+    }
+
     // Starts the game when play button is clicked
     public void PlayButtonClicked()
     {
@@ -148,9 +160,9 @@ public class GridPlace : MonoBehaviour
             gameOverDisplayed = true;
 
             Camera.SetActive(false);
-        }
-        
+        }        
     }
+
     public void PlayAgain()
     {
         iter = 0;
@@ -180,6 +192,5 @@ public class GridPlace : MonoBehaviour
         startWindow.SetActive(true);
         Camera.SetActive(false);
     }
-
 
 }

@@ -42,6 +42,7 @@ public class GameLogic
 
     private Cell[,] grid = new Cell[3,3];
     private Quaternion rotation { get; set; }
+    public Cell[,] Grid { get => grid; set => grid = value; }
 
     private int round = 1;
     private bool isGameOver = false;
@@ -80,34 +81,34 @@ public class GameLogic
         }
     }
 
-    public bool PlaceZeroOrCross(GameObject obj, bool isCross)
+    public void PlaceZeroOrCross(Vector2Int cell, bool isCross)
+    {
+        grid[cell.x, cell.y].Player = isCross ? Player.X : Player.O;
+        round++;
+        CheckIfGameOver ();
+    }
+
+    public Vector2Int GetClosestCell (Vector3 pos)
     {
         float minDistance = 1000.0f;
-        Cell selectedCell = new Cell();
-        foreach (Cell cell in grid)
+        Vector2Int selectedCell = new Vector2Int(-1, -1);
+        for (int i = 0; i < 3; i++)
         {
-            float currentDistance = Vector3.Distance(cell.Center, obj.transform.position);
-            if (currentDistance < minDistance && cell.Player == Player.Empty)
+            for (int j = 0; j < 3; j++)
             {
-                minDistance = currentDistance;
-                selectedCell = cell;
+                float currentDistance = Vector3.Distance(grid[i,j].Center, pos);
+                if (currentDistance < minDistance && grid[i, j].Player == Player.Empty)
+                {
+                    minDistance = currentDistance;
+                    selectedCell = new Vector2Int (i, j);
+                }
             }
         }
-
+        
         if (minDistance > cellWidth / 2)
-        {
-            GameObject.Destroy (obj);
-            return false;
-        }
+            return new Vector2Int (-1, -1);
 
-        obj.transform.SetPositionAndRotation (selectedCell.Center, obj.transform.rotation);
-        selectedCell.Player = isCross ? Player.X : Player.O;
-
-        round++;
-
-        CheckIfGameOver ();
-
-        return true;
+        return selectedCell;
     }
 
     public bool IsGameOver()
@@ -117,6 +118,7 @@ public class GameLogic
 
     public Player WhoWon()
     {
+        Debug.Assert (isGameOver);
         return winner;
     }
 
