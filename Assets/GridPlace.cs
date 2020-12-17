@@ -8,7 +8,7 @@ public class GridPlace : MonoBehaviour
 {
     private ARRaycastManager rayManager;
     private PlacementIndicator placementIndicator;
-    AudioSource audioData;
+    AudioSource[] audioData;
 
     private GameLogic gameLogic = GameLogic.GetInstance();
 
@@ -37,7 +37,7 @@ public class GridPlace : MonoBehaviour
     {
         rayManager = FindObjectOfType<ARRaycastManager>();
         placementIndicator = FindObjectOfType<PlacementIndicator>();
-        audioData = GetComponent<AudioSource>();
+        audioData = GetComponents<AudioSource>();
         iter = 0;
     }
 
@@ -65,7 +65,7 @@ public class GridPlace : MonoBehaviour
                     Grid = Instantiate(ObjectToPlace, trans.position, trans.rotation);
                     //obj.transform = temp;
                     gameLogic.InitGrid (trans.position, 1.3f, trans.rotation, zeroToPlace);
-
+                    audioData[1].Play(0);
 					//Vector3 objectSize = Vector3.Scale(transform.localScale, obj.bounds.size);
 					//Vector3 objectSize = Vector3.Scale(transform.localScale, obj.mesh.bounds.size);
 
@@ -100,7 +100,7 @@ public class GridPlace : MonoBehaviour
                 ZerosOrCross[iter].transform.Translate (new Vector3 (0, -0.3f, -0.0f));
                 ZerosOrCross[iter].transform.Rotate(-90, 0, 0);
                 gameLogic.PlaceZeroOrCross (ZerosOrCross[iter], true);
-                audioData.Play(0);
+                audioData[0].Play(0);
                 iter++;
             }
 
@@ -124,7 +124,7 @@ public class GridPlace : MonoBehaviour
                 ZerosOrCross[iter].transform.Translate (new Vector3 (0, -0.25f, -0.0f));
                 ZerosOrCross[iter].transform.Rotate(-90, 0, 0);
                 gameLogic.PlaceZeroOrCross (ZerosOrCross[iter], false);
-                audioData.Play(0);
+                audioData[0].Play(0);
                 iter++;
             }
 
