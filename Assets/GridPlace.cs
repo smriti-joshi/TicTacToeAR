@@ -54,20 +54,14 @@ public class GridPlace : MonoBehaviour
         if (!GridPlaced)
         {
             if(playButtonClicked)
-            { 
-                
+            {                
 				if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
 				{
 					Transform trans = placementIndicator.transform;
 					trans.Translate (new Vector3 (0, -0.45f, -0.0f));
 					trans.Rotate(-90, 0, 0);
-					//GameObject obj = Instantiate(ObjectToPlace, trans.position, trans.rotation);
                     Grid = Instantiate(ObjectToPlace, trans.position, trans.rotation);
-                    //obj.transform = temp;
                     gameLogic.InitGrid (trans.position, 1.3f, trans.rotation, zeroToPlace);
-
-					//Vector3 objectSize = Vector3.Scale(transform.localScale, obj.bounds.size);
-					//Vector3 objectSize = Vector3.Scale(transform.localScale, obj.mesh.bounds.size);
 
 					GridPlaced = true;
 					placementIndicator.Enable(false);
@@ -99,7 +93,11 @@ public class GridPlace : MonoBehaviour
                 ZerosOrCross[iter] = Instantiate(crossToPlace, hits[0].pose.position, hits[0].pose.rotation);
                 ZerosOrCross[iter].transform.Translate (new Vector3 (0, -0.3f, -0.0f));
                 ZerosOrCross[iter].transform.Rotate(-90, 0, 0);
-                gameLogic.PlaceZeroOrCross (ZerosOrCross[iter], true);
+                bool successful = gameLogic.PlaceZeroOrCross (ZerosOrCross[iter], true);
+
+                if (!successful)
+                    return false;
+
                 audioData.Play(0);
                 iter++;
             }

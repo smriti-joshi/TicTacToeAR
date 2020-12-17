@@ -76,12 +76,11 @@ public class GameLogic
         grid[2,2] = new Cell (new Vector3 (gridCenter.x + cellWidth, gridCenter.y, gridCenter.z + cellWidth));
 
         foreach(Cell cell in grid){
-            if (cell != grid[1,1])
-                CorrectCellenters (obj, cell, rotation);
+            CorrectCellCenters (obj, cell, rotation);
         }
     }
 
-    public void PlaceZeroOrCross(GameObject obj, bool isCross)
+    public bool PlaceZeroOrCross(GameObject obj, bool isCross)
     {
         float minDistance = 1000.0f;
         Cell selectedCell = new Cell();
@@ -95,12 +94,20 @@ public class GameLogic
             }
         }
 
+        if (minDistance > cellWidth / 2)
+        {
+            GameObject.Destroy (obj);
+            return false;
+        }
+
         obj.transform.SetPositionAndRotation (selectedCell.Center, obj.transform.rotation);
         selectedCell.Player = isCross ? Player.X : Player.O;
 
         round++;
 
         CheckIfGameOver ();
+
+        return true;
     }
 
     public bool IsGameOver()
@@ -126,7 +133,7 @@ public class GameLogic
     }
 
 
-    private void CorrectCellenters (GameObject obj, Cell cell, Quaternion rot)
+    private void CorrectCellCenters (GameObject obj, Cell cell, Quaternion rot)
     {
         Vector3 offset = new Vector3 (0.0f, 0.25f, -0.0f);
         obj.transform.SetPositionAndRotation (cell.Center + offset, rot);
