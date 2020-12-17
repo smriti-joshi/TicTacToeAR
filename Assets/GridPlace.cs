@@ -46,6 +46,7 @@ public class GridPlace : MonoBehaviour
         if (gameLogic.IsGameOver())
         {
             ShowGameOverWindow();
+            Player winner = gameLogic.WhoWon();
             return;
         }
 
