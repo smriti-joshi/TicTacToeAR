@@ -8,7 +8,7 @@ public class GridPlace : MonoBehaviour
 {
     private ARRaycastManager rayManager;
     private PlacementIndicator placementIndicator;
-
+    
 
     private GameLogic gameLogic = GameLogic.GetInstance();
 
