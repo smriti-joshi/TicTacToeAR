@@ -24,13 +24,17 @@ public class GridPlace : MonoBehaviour
     public GameObject zeroToPlace;
     public Mode mode;
 
+    public GameObject CrossWinnerScreen;
+    public GameObject ZeroWinnerScreen;
+    public GameObject GameOverScreen;
+    public GameObject Winner;
+
     private GameObject Grid;
 
     //Zeros and Crosses Object
     public GameObject[] ZerosOrCross = new GameObject[10];
     int iter ;
 
-    public GameObject gameOverWindow;
     public GameObject startWindow;
     public GameObject Camera;
 
@@ -55,8 +59,8 @@ public class GridPlace : MonoBehaviour
     {
         if (gameLogic.IsGameOver())
         {
-            ShowGameOverWindow();
             Player winner = gameLogic.WhoWon();
+            ShowGameOverWindow(winner);
             return;
         }
 
@@ -152,14 +156,29 @@ public class GridPlace : MonoBehaviour
     }
 
     // Shows the game over window
-    public void ShowGameOverWindow()
+    public void ShowGameOverWindow(Player winner)
     {
         if(!gameOverDisplayed)
         {
-            gameOverWindow.SetActive(true);
+            
+            if (winner == Player.X)
+            {
+                CrossWinnerScreen.SetActive(true);
+                Winner = CrossWinnerScreen;
+            }
+            else if (winner == Player.O)
+            {
+                ZeroWinnerScreen.SetActive(true);
+                Winner = ZeroWinnerScreen;
+            }
+            else if(winner == Player.Empty)
+            {
+                GameOverScreen.SetActive(true);
+                Winner = GameOverScreen;
+            }
             gameOverDisplayed = true;
 
-            Camera.SetActive(false);
+            // Camera.SetActive(false);
         }        
     }
 
@@ -176,10 +195,11 @@ public class GridPlace : MonoBehaviour
         //Update params in gamelogic
         gameLogic.RestartGame();
 
+        Winner.SetActive(false);
+
         //Hide the gameover window
-        gameOverWindow.SetActive(false);
         gameOverDisplayed = false;
-        Camera.SetActive(true);
+        //Camera.SetActive(true);
     }
 
     public void ReturnToMenu()
@@ -190,7 +210,7 @@ public class GridPlace : MonoBehaviour
         playButtonClicked = false;
         PlayAgain();
         startWindow.SetActive(true);
-        Camera.SetActive(false);
+       // Camera.SetActive(false);
     }
 
 }
