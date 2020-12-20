@@ -39,7 +39,7 @@ public class Player : MonoBehaviour
     private bool isPlayerOne = true;
 
     private Mode mode;
-    private Vector3[,] gridCenters;
+    private Vector3[,] gridCenters = new Vector3[3, 3];
     private int iter;
     private float cellWidth;
 
@@ -88,7 +88,7 @@ public class Player : MonoBehaviour
             if (selectedCell.x != -1 || selectedCell.y != -1)
             {
                 GameObject obj = !isPlayerOne ? CrossToPlace : ZeroToPlace;
-                ZerosOrCross[iter] = Instantiate (obj, gameLogic.Grid[selectedCell.x, selectedCell.y].Center, new Quaternion ());
+                ZerosOrCross[iter] = Instantiate (obj, gridCenters[selectedCell.x, selectedCell.y], new Quaternion ());
                 ZerosOrCross[iter].transform.Rotate (-90, 0, 0);
                 gameLogic.PlaceZeroOrCross (selectedCell, !isPlayerOne);
 
