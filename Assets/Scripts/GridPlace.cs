@@ -51,7 +51,7 @@ public class GridPlace : MonoBehaviour
         placementIndicator = FindObjectOfType<PlacementIndicator>();
         audioData = GetComponents<AudioSource>();
         iter = 0;
-        mode = Mode.Single;
+        //mode = Mode.Single;
     }
 
     // Update is called once per frame
@@ -211,4 +211,18 @@ public class GridPlace : MonoBehaviour
        // Camera.SetActive(false);
     }
 
+    public void setMode(string mode_name)
+    {
+        switch(mode_name)
+        {
+            case "Single": mode = Mode.Single;
+                           break;
+            case "MultiLocal": mode = Mode.MultiLocal;
+                               break;
+            case "MultiOnline": mode = Mode.MultiOnline; 
+                                break;
+        }
+    }
+
 }
+    
