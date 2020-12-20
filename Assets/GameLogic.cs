@@ -181,6 +181,176 @@ public class GameLogic
             winner = grid[0, 2].Player;
         }
     }
+
+
+    // methods implementing AI
+    public Vector2Int findOptimalMove ()
+    {
+        Cell[,] tempGrid = grid;
+        int bestValue = -1000;
+        int rowValue = 0;
+        int colValue = 0;
+
+        // check the grid and find the best next move
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                if (tempGrid[i, j].Player == Player.Empty)
+                {
+                    // we make a guess and AI decided to choose this 
+                    tempGrid[i, j].Player = Player.X; // make a move AI is only X???
+
+                     // calculate the cost of this step using the minimax
+                    int costMove = minimax(tempGrid, 0, false);
+
+                    //remove this step
+                    tempGrid[i, j].Player = Player.Empty;
+
+                    // if this is best, then update this new score
+                    if (costMove > bestValue)
+                    {
+                        rowValue = i;
+                        colValue = j;
+                        bestValue = costMove;
+                    }
+                }
+            }
+        }
+
+        return new Vector2Int (rowValue, colValue);
+    }
+
+    //minimax algorithm
+    private int minimax (Cell[,] tempGrid,   //I am not sure what type tempGrid is
+                   int depth, Boolean isMax)
+    {
+        int score = totalscorecheck(tempGrid);
+
+        // maximizer won the game  
+        if (score == 10)
+            return score;
+
+        // minimizer won the game   
+        if (score == -10)
+            return score;
+
+        // no moves left and no winner 
+        // ? how to check
+        if(HasEmptyCell(tempGrid)) // maybe like this
+            return 0;
+
+        // maximizer's move 
+        if (isMax)
+        {
+            int best = -1000;
+
+            // check all cells
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    if (tempGrid[i, j].Player == Player.Empty)
+                    {
+                        // guess the step
+                        tempGrid[i, j].Player = Player.X;
+
+                        // minimax recursively to compute maximum value 
+                        best = Math.Max (best, minimax (tempGrid, depth + 1, !isMax));
+
+                        // back this step
+                        tempGrid[i, j].Player = Player.Empty;
+                    }
+                }
+            }
+            return best;
+        }
+
+        // minimizer's move 
+        else
+        {
+            int best = 1000;
+
+            // check the tempGrid
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    if (tempGrid[i, j].Player == Player.Empty)
+                    {
+                        // Make a guess
+                        tempGrid[i, j].Player = Player.O;
+
+                        // minimax recursively to compute minimum value 
+                        best = Math.Min (best, minimax (tempGrid, depth + 1, !isMax));
+
+                        // back this step
+                        tempGrid[i, j].Player = Player.Empty;
+                    }
+                }
+            }
+            return best;
+        }
+    }
+
+    private int totalscorecheck (Cell[,] tempGrid)
+    {
+        // Rows - X or O win
+        for (int row = 0; row < 3; row++)
+        {
+            if (tempGrid[row, 0].Player == tempGrid[row, 1].Player && tempGrid[row, 1].Player == tempGrid[row, 2].Player)
+            {
+                if (tempGrid[row, 0].Player == Player.X)
+                    return +10;
+                else if (tempGrid[row, 0].Player == Player.O)
+                    return -10;
+            }
+        }
+
+        // Columns - X or O win
+        for (int col = 0; col < 3; col++)
+        {
+            if (tempGrid[0, col].Player == tempGrid[1, col].Player && tempGrid[1, col].Player == tempGrid[2, col].Player)
+            {
+                if (tempGrid[0, col].Player == Player.X)
+                    return +10;
+
+                else if (tempGrid[0, col].Player == Player.O)
+                    return -10;
+            }
+        }
+
+        // Diagonals - X or O win
+        if (tempGrid[0, 0].Player == tempGrid[1, 1].Player && tempGrid[1, 1].Player == tempGrid[2, 2].Player)
+        {
+            if (tempGrid[0, 0].Player == Player.X)
+                return +10;
+            else if (tempGrid[0, 0].Player == Player.O)
+                return -10;
+        }
+
+        if (tempGrid[0, 2].Player == tempGrid[1, 1].Player && tempGrid[1, 1].Player == tempGrid[2, 0].Player)
+        {
+            if (tempGrid[0, 2].Player == Player.X)
+                return +10;
+            else if (tempGrid[0, 2].Player == Player.O)
+                return -10;
+        }
+
+        // Elif 
+        return 0;
+    }
+
+    private bool HasEmptyCell (Cell[,] grid)
+    {
+        foreach (Cell cell in grid)
+        {
+            if (cell.Player == Player.Empty)
+                return true;
+        }
+
+        return false;
+    }
 }
 
 

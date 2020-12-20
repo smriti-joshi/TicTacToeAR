@@ -51,7 +51,7 @@ public class GridPlace : MonoBehaviour
         placementIndicator = FindObjectOfType<PlacementIndicator>();
         audioData = GetComponents<AudioSource>();
         iter = 0;
-        mode = Mode.MultiLocal;
+        mode = Mode.Single;
     }
 
     // Update is called once per frame
@@ -83,24 +83,20 @@ public class GridPlace : MonoBehaviour
             }
         }
         else
-        {
-            if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
+        {            
+            Vector2Int selectedCell = PlayRound();
+
+            if (selectedCell.x != -1 || selectedCell.y != -1)
             {
-                Vector2Int selectedCell = PlayRound();
+                GameObject obj = !isPlayerOne ? crossToPlace : zeroToPlace;
+                ZerosOrCross[iter] = Instantiate (obj, gameLogic.Grid[selectedCell.x, selectedCell.y].Center, new Quaternion ());
+                ZerosOrCross[iter].transform.Rotate (-90, 0, 0);
+                gameLogic.PlaceZeroOrCross (selectedCell, !isPlayerOne);
 
-                if (selectedCell.x != -1 || selectedCell.y != -1)
-                {
-                    GameObject obj = isPlayerOne ? crossToPlace : zeroToPlace;
-                    ZerosOrCross[iter] = Instantiate (obj, gameLogic.Grid[selectedCell.x, selectedCell.y].Center, new Quaternion ());
-                    ZerosOrCross[iter].transform.Rotate (-90, 0, 0);
-                    gameLogic.PlaceZeroOrCross (selectedCell, isPlayerOne);
-
-                    audioData[0].Play (0);
-                    iter++;
-                    isPlayerOne = !isPlayerOne;
-                }
-
-            }
+                audioData[0].Play (0);
+                iter++;
+                isPlayerOne = !isPlayerOne;
+            }                       
         }
     }
 
@@ -129,19 +125,21 @@ public class GridPlace : MonoBehaviour
     }
 
     private Vector2Int PlayRoundLocal ()
-    {        
-        List<ARRaycastHit> hits = new List<ARRaycastHit>();
-        rayManager.Raycast(Input.touches[0].position, hits, TrackableType.Planes);
+    {
+        if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
+        {
+            List<ARRaycastHit> hits = new List<ARRaycastHit>();
+            rayManager.Raycast (Input.touches[0].position, hits, TrackableType.Planes);
 
-        if (hits.Count > 0)
-            return gameLogic.GetClosestCell (hits[0].pose.position - new Vector3(0, 0.2f, 0)); // compensate for the offset of the grid
-
+            if (hits.Count > 0)
+                return gameLogic.GetClosestCell (hits[0].pose.position - new Vector3 (0, 0.2f, 0)); // compensate for the offset of the grid
+        }
         return new Vector2Int(-1, -1);
     }
 
     private Vector2Int PlayRoundAI ()
     {
-        return new Vector2Int (-1, -1);
+        return gameLogic.findOptimalMove ();
     }
 
     private Vector2Int PlayRoundOnline ()
@@ -160,31 +158,31 @@ public class GridPlace : MonoBehaviour
     {
         if(!gameOverDisplayed)
         {
-            
-            if (winner == Player.X)
+            switch (winner)
             {
-                CrossWinnerScreen.SetActive(true);
-                Winner = CrossWinnerScreen;
+                case Player.X:
+                    CrossWinnerScreen.SetActive (true);
+                    Winner = CrossWinnerScreen;
+                    break;
+                case Player.O:
+                    ZeroWinnerScreen.SetActive (true);
+                    Winner = ZeroWinnerScreen;
+                    break;
+                case Player.Empty:
+                    GameOverScreen.SetActive (true);
+                    Winner = GameOverScreen;
+                    break;
             }
-            else if (winner == Player.O)
-            {
-                ZeroWinnerScreen.SetActive(true);
-                Winner = ZeroWinnerScreen;
-            }
-            else if(winner == Player.Empty)
-            {
-                GameOverScreen.SetActive(true);
-                Winner = GameOverScreen;
-            }
-            gameOverDisplayed = true;
 
+            gameOverDisplayed = true;
             // Camera.SetActive(false);
-        }        
+        }
     }
 
     public void PlayAgain()
     {
         iter = 0;
+        isPlayerOne = true;
 
         //To destroy the zeros and crosses
         for (int j = 0; j < ZerosOrCross.Length; j++)
