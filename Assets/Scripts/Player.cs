@@ -11,47 +11,46 @@ public enum Mode
 }
 
 
-public class GridPlace : MonoBehaviour
+public class Player : MonoBehaviour
 {
-    private ARRaycastManager rayManager;
-    private PlacementIndicator placementIndicator;
-    AudioSource[] audioData;
-
-    private GameLogic gameLogic = GameLogic.GetInstance();
-
     public GameObject ObjectToPlace;
-    public GameObject crossToPlace;
-    public GameObject zeroToPlace;
-    public Mode mode;
+    public GameObject CrossToPlace;
+    public GameObject ZeroToPlace;
 
     public GameObject CrossWinnerScreen;
     public GameObject ZeroWinnerScreen;
     public GameObject GameOverScreen;
-    public GameObject Winner;
+    public GameObject StartWindow;
 
+    private ARRaycastManager rayManager;
+    private PlacementIndicator placementIndicator;
+    private AudioSource[] audioData;
+
+    private GameLogic gameLogic = GameLogic.GetInstance();
+
+    private GameObject Winner;
     private GameObject Grid;
-
-    //Zeros and Crosses Object
-    public GameObject[] ZerosOrCross = new GameObject[10];
-    int iter ;
-
-    public GameObject startWindow;
-    public GameObject Camera;
+    private GameObject[] ZerosOrCross = new GameObject[10];
 
     //Boolean variables
-    public bool playButtonClicked = false; // Play button from start menu
-    public bool GridPlaced = false;        // Grid is placed
-    public bool gameOverDisplayed = false; // Game over window is displayed
+    private bool playButtonClicked = false; // Play button from start menu
+    private bool GridPlaced = false;        // Grid is placed
+    private bool gameOverDisplayed = false; // Game over window is displayed
     private bool isPlayerOne = true;
 
+    private Mode mode;
+    private Vector3[,] gridCenters;
+    private int iter;
+    private float cellWidth;
+
+
     // Start is called before the first frame update
-    void Start()
+    void Start ()
     {
         rayManager = FindObjectOfType<ARRaycastManager>();
         placementIndicator = FindObjectOfType<PlacementIndicator>();
         audioData = GetComponents<AudioSource>();
         iter = 0;
-        //mode = Mode.Single;
     }
 
     // Update is called once per frame
@@ -59,7 +58,7 @@ public class GridPlace : MonoBehaviour
     {
         if (gameLogic.IsGameOver())
         {
-            Player winner = gameLogic.WhoWon();
+            State winner = gameLogic.WhoWon();
             ShowGameOverWindow(winner);
             return;
         }
@@ -74,7 +73,7 @@ public class GridPlace : MonoBehaviour
 					trans.Translate (new Vector3 (0, -0.45f, -0.0f));
 					trans.Rotate(-90, 0, 0);
                     Grid = Instantiate(ObjectToPlace, trans.position, trans.rotation);
-                    gameLogic.InitGrid (trans.position, 1.3f, trans.rotation, zeroToPlace);
+                    InitGrid (trans.position, 1.3f, trans.rotation, ZeroToPlace);
                     audioData[1].Play(0);
 
 					GridPlaced = true;
@@ -88,7 +87,7 @@ public class GridPlace : MonoBehaviour
 
             if (selectedCell.x != -1 || selectedCell.y != -1)
             {
-                GameObject obj = !isPlayerOne ? crossToPlace : zeroToPlace;
+                GameObject obj = !isPlayerOne ? CrossToPlace : ZeroToPlace;
                 ZerosOrCross[iter] = Instantiate (obj, gameLogic.Grid[selectedCell.x, selectedCell.y].Center, new Quaternion ());
                 ZerosOrCross[iter].transform.Rotate (-90, 0, 0);
                 gameLogic.PlaceZeroOrCross (selectedCell, !isPlayerOne);
@@ -132,7 +131,7 @@ public class GridPlace : MonoBehaviour
             rayManager.Raycast (Input.touches[0].position, hits, TrackableType.Planes);
 
             if (hits.Count > 0)
-                return gameLogic.GetClosestCell (hits[0].pose.position - new Vector3 (0, 0.2f, 0)); // compensate for the offset of the grid
+                return GetClosestCell (hits[0].pose.position - new Vector3 (0, 0.2f, 0)); // compensate for the offset of the grid
         }
         return new Vector2Int(-1, -1);
     }
@@ -154,28 +153,27 @@ public class GridPlace : MonoBehaviour
     }
 
     // Shows the game over window
-    public void ShowGameOverWindow(Player winner)
+    private void ShowGameOverWindow(State winner)
     {
         if(!gameOverDisplayed)
         {
             switch (winner)
             {
-                case Player.X:
+                case State.X:
                     CrossWinnerScreen.SetActive (true);
                     Winner = CrossWinnerScreen;
                     break;
-                case Player.O:
+                case State.O:
                     ZeroWinnerScreen.SetActive (true);
                     Winner = ZeroWinnerScreen;
                     break;
-                case Player.Empty:
+                case State.Empty:
                     GameOverScreen.SetActive (true);
                     Winner = GameOverScreen;
                     break;
             }
 
             gameOverDisplayed = true;
-            // Camera.SetActive(false);
         }
     }
 
@@ -192,12 +190,10 @@ public class GridPlace : MonoBehaviour
 
         //Update params in gamelogic
         gameLogic.RestartGame();
-
         Winner.SetActive(false);
 
         //Hide the gameover window
         gameOverDisplayed = false;
-        //Camera.SetActive(true);
     }
 
     public void ReturnToMenu()
@@ -207,20 +203,76 @@ public class GridPlace : MonoBehaviour
 
         playButtonClicked = false;
         PlayAgain();
-        startWindow.SetActive(true);
-       // Camera.SetActive(false);
+        StartWindow.SetActive(true);
     }
 
-    public void setMode(string mode_name)
+    public void InitGrid (Vector3 gridCenter, float gridSize, Quaternion rotation, GameObject obj)
     {
-        switch(mode_name)
+        cellWidth = gridSize / 3;        
+
+        gridCenters[0,0] = new Vector3 (gridCenter.x - cellWidth, gridCenter.y, gridCenter.z - cellWidth);
+        gridCenters[0,1] = new Vector3 (gridCenter.x            , gridCenter.y, gridCenter.z - cellWidth);
+        gridCenters[0,2] = new Vector3 (gridCenter.x + cellWidth, gridCenter.y, gridCenter.z - cellWidth);
+        gridCenters[1,0] = new Vector3 (gridCenter.x - cellWidth, gridCenter.y, gridCenter.z            );
+        gridCenters[1,1] = new Vector3 (gridCenter.x            , gridCenter.y, gridCenter.z            );
+        gridCenters[1,2] = new Vector3 (gridCenter.x + cellWidth, gridCenter.y, gridCenter.z            );
+        gridCenters[2,0] = new Vector3 (gridCenter.x - cellWidth, gridCenter.y, gridCenter.z + cellWidth);
+        gridCenters[2,1] = new Vector3 (gridCenter.x            , gridCenter.y, gridCenter.z + cellWidth);
+        gridCenters[2,2] = new Vector3 (gridCenter.x + cellWidth, gridCenter.y, gridCenter.z + cellWidth);
+
+        for (int i = 0; i < 3; i++)
         {
-            case "Single": mode = Mode.Single;
-                           break;
-            case "MultiLocal": mode = Mode.MultiLocal;
-                               break;
-            case "MultiOnline": mode = Mode.MultiOnline; 
-                                break;
+            for (int j = 0; j < 3; j++)
+            {
+                gridCenters[i, j] = CorrectCellCenters (obj, gridCenters[i, j], rotation);
+            }
+        }
+    }
+
+    private Vector3 CorrectCellCenters (GameObject obj, in Vector3 cellCenter, Quaternion rot)
+    {
+        Vector3 offset = new Vector3 (0.0f, 0.25f, -0.0f);
+        obj.transform.SetPositionAndRotation (cellCenter + offset, rot);
+        obj.transform.RotateAround (gridCenters[1, 1], Vector3.up, rot.eulerAngles.y);
+        return obj.transform.position;
+    }
+
+    public Vector2Int GetClosestCell (Vector3 pos)
+    {
+        float minDistance = 1000.0f;
+        Vector2Int selectedCell = new Vector2Int(-1, -1);
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                float currentDistance = Vector3.Distance(gridCenters[i,j], pos);
+                if (currentDistance < minDistance && gameLogic.GetCellState(new Vector2Int(i, j)) == State.Empty)
+                {
+                    minDistance = currentDistance;
+                    selectedCell = new Vector2Int (i, j);
+                }
+            }
+        }
+
+        if (minDistance > cellWidth / 1.5)
+            return new Vector2Int (-1, -1);
+
+        return selectedCell;
+    }
+
+    public void SetMode (string mode_name)
+    {
+        switch (mode_name)
+        {
+            case "Single":
+                mode = Mode.Single;
+                break;
+            case "MultiLocal":
+                mode = Mode.MultiLocal;
+                break;
+            case "MultiOnline":
+                mode = Mode.MultiOnline;
+                break;
         }
     }
 
