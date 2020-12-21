@@ -1,6 +1,7 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 
@@ -11,7 +12,7 @@ public enum Mode
 }
 
 
-public class Player : MonoBehaviour
+public class Player : NetworkBehaviour
 {
     public GameObject ObjectToPlace;
     public GameObject CrossToPlace;
@@ -25,8 +26,7 @@ public class Player : MonoBehaviour
     private ARRaycastManager rayManager;
     private PlacementIndicator placementIndicator;
     private AudioSource[] audioData;
-
-    private GameLogic gameLogic = GameLogic.GetInstance();
+    private GameLogic gameLogic;
 
     private GameObject Winner;
     private GameObject Grid;
@@ -36,7 +36,6 @@ public class Player : MonoBehaviour
     private bool playButtonClicked = false; // Play button from start menu
     private bool GridPlaced = false;        // Grid is placed
     private bool gameOverDisplayed = false; // Game over window is displayed
-    private bool isPlayerOne = true;
 
     private Mode mode;
     private Vector3[,] gridCenters = new Vector3[3, 3];
@@ -51,6 +50,10 @@ public class Player : MonoBehaviour
         placementIndicator = FindObjectOfType<PlacementIndicator>();
         audioData = GetComponents<AudioSource>();
         iter = 0;
+        gameLogic = FindObjectOfType<GameLogic> ();
+        
+        if (mode == Mode.MultiOnline)
+            gameLogic.CmdAddPlayer (netId);
     }
 
     // Update is called once per frame
@@ -87,21 +90,25 @@ public class Player : MonoBehaviour
 
             if (selectedCell.x != -1 || selectedCell.y != -1)
             {
-                GameObject obj = !isPlayerOne ? CrossToPlace : ZeroToPlace;
-                ZerosOrCross[iter] = Instantiate (obj, gridCenters[selectedCell.x, selectedCell.y], new Quaternion ());
-                ZerosOrCross[iter].transform.Rotate (-90, 0, 0);
-                gameLogic.PlaceZeroOrCross (selectedCell, !isPlayerOne);
+                if (mode == Mode.MultiOnline)
+                {
+                    gameLogic.CmdPlaceZeroOrCross (selectedCell.x, selectedCell.y);
+                }
+                else
+                {
+                    gameLogic.PlaceZeroOrCross (selectedCell.x, selectedCell.y);
+                    ZeroOrCrossPlaced (selectedCell.x, selectedCell.y);
+                }
 
                 audioData[0].Play (0);
                 iter++;
-                isPlayerOne = !isPlayerOne;
             }                       
         }
     }
 
     private Vector2Int PlayRound ()
     {
-        if (isPlayerOne)
+        if (gameLogic.IsPlayerOne)
             return PlayRoundLocal ();
 
         // else player two
@@ -116,7 +123,6 @@ public class Player : MonoBehaviour
                 cell = PlayRoundLocal ();
                 break;
             case Mode.MultiOnline:
-                cell = PlayRoundOnline();
                 break;
         }
 
@@ -180,7 +186,6 @@ public class Player : MonoBehaviour
     public void PlayAgain()
     {
         iter = 0;
-        isPlayerOne = true;
 
         //To destroy the zeros and crosses
         for (int j = 0; j < ZerosOrCross.Length; j++)
@@ -276,5 +281,17 @@ public class Player : MonoBehaviour
         }
     }
 
+    public void ZeroOrCrossPlaced (int row, int column)
+    {
+        GameObject obj = gameLogic.IsPlayerOne ? CrossToPlace : ZeroToPlace;
+        ZerosOrCross[iter] = Instantiate (obj, gridCenters[row, column], new Quaternion ());
+        ZerosOrCross[iter].transform.Rotate (-90, 0, 0);
+    }
+
+    [ClientRpc]
+    public void RpcZeroOrCrossPlaced(int row, int column)
+    {
+        ZeroOrCrossPlaced (row, column); 
+    }
 }
     
