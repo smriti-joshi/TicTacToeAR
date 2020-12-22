@@ -1,7 +1,7 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Networking;
+using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 
@@ -12,7 +12,7 @@ public enum Mode
 }
 
 
-public class Player : NetworkBehaviour
+public class Player : MonoBehaviour
 {
     public GameObject ObjectToPlace;
     public GameObject CrossToPlace;
@@ -26,7 +26,10 @@ public class Player : NetworkBehaviour
     private ARRaycastManager rayManager;
     private PlacementIndicator placementIndicator;
     private AudioSource[] audioData;
-    private GameLogic gameLogic;
+    private Button hostPlayButton;
+
+    private GameLogic gameLogic = GameLogic.GetInstance();
+    private Network network;
 
     private GameObject Winner;
     private GameObject Grid;
@@ -36,6 +39,7 @@ public class Player : NetworkBehaviour
     private bool playButtonClicked = false; // Play button from start menu
     private bool GridPlaced = false;        // Grid is placed
     private bool gameOverDisplayed = false; // Game over window is displayed
+    private bool isPlayerOne = true;
 
     private Mode mode;
     private Vector3[,] gridCenters = new Vector3[3, 3];
@@ -50,15 +54,26 @@ public class Player : NetworkBehaviour
         placementIndicator = FindObjectOfType<PlacementIndicator>();
         audioData = GetComponents<AudioSource>();
         iter = 0;
-        gameLogic = FindObjectOfType<GameLogic> ();
-        
-        if (mode == Mode.MultiOnline)
-            gameLogic.CmdAddPlayer (netId);
+        hostPlayButton = GameObject.FindGameObjectWithTag ("HostPlay").GetComponent<Button> ();
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (mode == Mode.MultiOnline && !network.IsHost /*&&  hostPlayButton disabled && playbutton not clicked*/)
+        {
+            if (network.HasUpdate)
+            {
+                Packet message = network.GetMessage ();
+                // player placed marker
+                if (message.id == 0)
+                {
+                    // enable 
+                    //hostPlayButton;
+                }
+            }
+        }
+
         if (gameLogic.IsGameOver())
         {
             State winner = gameLogic.WhoWon();
@@ -90,25 +105,21 @@ public class Player : NetworkBehaviour
 
             if (selectedCell.x != -1 || selectedCell.y != -1)
             {
-                if (mode == Mode.MultiOnline)
-                {
-                    gameLogic.CmdPlaceZeroOrCross (selectedCell.x, selectedCell.y);
-                }
-                else
-                {
-                    gameLogic.PlaceZeroOrCross (selectedCell.x, selectedCell.y);
-                    ZeroOrCrossPlaced (selectedCell.x, selectedCell.y);
-                }
+                GameObject obj = !isPlayerOne ? CrossToPlace : ZeroToPlace;
+                ZerosOrCross[iter] = Instantiate (obj, gridCenters[selectedCell.x, selectedCell.y], new Quaternion ());
+                ZerosOrCross[iter].transform.Rotate (-90, 0, 0);
+                gameLogic.PlaceZeroOrCross (selectedCell, !isPlayerOne);
 
                 audioData[0].Play (0);
                 iter++;
+                isPlayerOne = !isPlayerOne;
             }                       
         }
     }
 
     private Vector2Int PlayRound ()
     {
-        if (gameLogic.IsPlayerOne)
+        if (isPlayerOne)
             return PlayRoundLocal ();
 
         // else player two
@@ -123,6 +134,7 @@ public class Player : NetworkBehaviour
                 cell = PlayRoundLocal ();
                 break;
             case Mode.MultiOnline:
+                cell = PlayRoundOnline();
                 break;
         }
 
@@ -131,15 +143,30 @@ public class Player : NetworkBehaviour
 
     private Vector2Int PlayRoundLocal ()
     {
+        Vector2Int cell = new Vector2Int(-1, -1); ;
+
         if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
         {
             List<ARRaycastHit> hits = new List<ARRaycastHit>();
             rayManager.Raycast (Input.touches[0].position, hits, TrackableType.Planes);
 
             if (hits.Count > 0)
-                return GetClosestCell (hits[0].pose.position - new Vector3 (0, 0.2f, 0)); // compensate for the offset of the grid
+                cell = GetClosestCell (hits[0].pose.position - new Vector3 (0, 0.2f, 0)); // compensate for the offset of the grid
         }
-        return new Vector2Int(-1, -1);
+
+        if (mode == Mode.MultiOnline)
+        {
+            Packet toSend = new Packet
+            {
+                id = 1,
+                message = "update",
+                row = cell.x,
+                column = cell.y
+            };
+            network.Send (toSend);
+        }
+        
+        return cell;
     }
 
     private Vector2Int PlayRoundAI ()
@@ -149,6 +176,14 @@ public class Player : NetworkBehaviour
 
     private Vector2Int PlayRoundOnline ()
     {
+        if (network.HasUpdate)
+        {
+            Packet message = network.GetMessage ();
+            // player placed marker
+            if (message .id == 1)
+                return new Vector2Int (message.row, message.column);
+        }
+
         return new Vector2Int (-1, -1);
     }
 
@@ -186,6 +221,7 @@ public class Player : NetworkBehaviour
     public void PlayAgain()
     {
         iter = 0;
+        isPlayerOne = true;
 
         //To destroy the zeros and crosses
         for (int j = 0; j < ZerosOrCross.Length; j++)
@@ -265,6 +301,21 @@ public class Player : NetworkBehaviour
         return selectedCell;
     }
 
+    public void SetRole (string role)
+    {
+        if (role == "host")
+        {
+            network.StartHost ();
+        }
+
+        if (role == "client")
+        {
+            //TextField(?) ip = GameObject.FindGameObjectWithTag ("ShootButton").GetComponent<TextField> ();
+            //network.StartClient (ip.GetText());
+            ;
+        }
+    }
+
     public void SetMode (string mode_name)
     {
         switch (mode_name)
@@ -277,21 +328,10 @@ public class Player : NetworkBehaviour
                 break;
             case "MultiOnline":
                 mode = Mode.MultiOnline;
+                network = new Network ();
                 break;
         }
     }
 
-    public void ZeroOrCrossPlaced (int row, int column)
-    {
-        GameObject obj = gameLogic.IsPlayerOne ? CrossToPlace : ZeroToPlace;
-        ZerosOrCross[iter] = Instantiate (obj, gridCenters[row, column], new Quaternion ());
-        ZerosOrCross[iter].transform.Rotate (-90, 0, 0);
-    }
-
-    [ClientRpc]
-    public void RpcZeroOrCrossPlaced(int row, int column)
-    {
-        ZeroOrCrossPlaced (row, column); 
-    }
 }
     

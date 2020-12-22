@@ -1,63 +1,34 @@
 ﻿using UnityEngine;
-using UnityEngine.Networking;
 using System;
 
 public enum State
 {
-    Empty = 0, X = 1, O = 2
+    Empty, X, O
 }
 
-public class GameLogic : NetworkBehaviour
+public class GameLogic
 {
+    static GameLogic instance = new GameLogic ();
+
     private State[,] gridStates = new State[3,3];
-    [SyncVar]
-    private NetworkInstanceId playerOne;
-    [SyncVar]
-    private NetworkInstanceId playerTwo;
-    private int round = 0;
-    [SyncVar]
+    private int round = 1;
     private bool isGameOver = false;
-    [SyncVar]
     private State winner = State.Empty;
-    [SyncVar]
-    private bool isPlayerOne = false;
 
-    public bool IsPlayerOne { get => isPlayerOne; set => isPlayerOne = value; }
-
-    public void PlaceZeroOrCross (int row, int column)
+    private GameLogic ()
     {
-        gridStates[row, column] = isPlayerOne ? State.X : State.O;
+    }
+
+    public static GameLogic GetInstance ()
+    {
+        return instance;
+    }
+
+    public void PlaceZeroOrCross(Vector2Int cell, bool isCross)
+    {
+        gridStates[cell.x, cell.y] = isCross ? State.X : State.O;
         round++;
-        isPlayerOne = !isPlayerOne;
         CheckIfGameOver ();
-    }
-
-    [Command]
-    public void CmdPlaceZeroOrCross (int row, int column)
-    {
-        PlaceZeroOrCross (row, column);
-
-        Player p1 = NetworkServer.FindLocalObject (playerOne).GetComponent<Player> ();
-        //Player p2 = NetworkServer.FindLocalObject (playerTwo).GetComponent<Player> ();
-
-       // Debug.Assert (p1 != null && p2 != null);
-
-        p1.RpcZeroOrCrossPlaced (row, column);
-        //p2.RpcZeroOrCrossPlaced (row, column, isCross);
-    }
-
-    [Command]
-    public void CmdAddPlayer (NetworkInstanceId id)
-    {
-        Debug.Assert (!playerOne.IsEmpty () || !playerTwo.IsEmpty ());
-        if (playerOne.IsEmpty())
-        {
-            playerOne = id;
-        }
-        else
-        {
-            playerTwo = id;
-        }
     }
 
     public State GetCellState(Vector2Int cell)
@@ -80,14 +51,20 @@ public class GameLogic : NetworkBehaviour
     public void RestartGame()
     {
         isGameOver = false;
-        round = 0;
+        round = 1;
         winner = State.Empty;
         gridStates = new State[3, 3];
-        isPlayerOne = false;
     }
 
     private void CheckIfGameOver()
     {
+        if (round > 9)
+        {
+            isGameOver = true;
+            winner = State.Empty;
+            return;
+        }
+
         // horizontally and vertically
         for (int i = 0; i < 3 && winner == State.Empty; i++)
         {
@@ -116,10 +93,6 @@ public class GameLogic : NetworkBehaviour
             isGameOver = true;
             winner = gridStates[0, 2];
         }
-
-        if (round >= 9)
-            isGameOver = true;
-
     }
 
 
