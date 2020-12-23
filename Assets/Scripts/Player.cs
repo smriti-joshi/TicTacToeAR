@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
+using System.IO;
 
 
 public enum Mode
@@ -45,8 +46,7 @@ public class Player : MonoBehaviour
     private Vector3[,] gridCenters = new Vector3[3, 3];
     private int iter;
     private float cellWidth;
-
-
+    private string IP = "102.32";
     // Start is called before the first frame update
     void Start ()
     {
@@ -334,5 +334,10 @@ public class Player : MonoBehaviour
         }
     }
 
+    //functions to share to social media app
+    public void shareOnSocialMedia()
+    {
+        new NativeShare().SetText(IP).Share();
+    }
 }
     
