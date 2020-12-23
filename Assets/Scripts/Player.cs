@@ -46,7 +46,6 @@ public class Player : MonoBehaviour
     private Vector3[,] gridCenters = new Vector3[3, 3];
     private int iter;
     private float cellWidth;
-    private string IP = "102.32";
     // Start is called before the first frame update
     void Start ()
     {
@@ -54,22 +53,20 @@ public class Player : MonoBehaviour
         placementIndicator = FindObjectOfType<PlacementIndicator>();
         audioData = GetComponents<AudioSource>();
         iter = 0;
-        hostPlayButton = GameObject.FindGameObjectWithTag ("HostPlay").GetComponent<Button> ();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (mode == Mode.MultiOnline && !network.IsHost /*&&  hostPlayButton disabled && playbutton not clicked*/)
+        if (mode == Mode.MultiOnline && network.IsHost && !hostPlayButton.interactable && !playButtonClicked)
         {
             if (network.HasUpdate)
             {
                 Packet message = network.GetMessage ();
-                // player placed marker
                 if (message.id == 0)
                 {
                     // enable 
-                    //hostPlayButton;
+                    hostPlayButton.interactable = true;
                 }
             }
         }
@@ -305,16 +302,25 @@ public class Player : MonoBehaviour
     {
         if (role == "host")
         {
-            network.StartHost ();
+            hostPlayButton = GameObject.FindGameObjectWithTag ("HostPlayButton").GetComponent<Button> ();
+            string ipAddress = network.StartHost ();
+            Text ip = GameObject.FindGameObjectWithTag ("HostIpAddress").GetComponent<Text> ();
+            ip.text = ipAddress;
             isPlayerOne = true;
         }
 
         if (role == "client")
         {
-            //TextField(?) ip = GameObject.FindGameObjectWithTag ("ShootButton").GetComponent<TextField> ();
-            //network.StartClient (ip.GetText());
             isPlayerOne = false;
         }
+    }
+
+    public void ClientConnectClicked ()
+    {
+        InputField ip = GameObject.FindGameObjectWithTag ("ClientIpAddress").GetComponent<InputField> ();
+        bool successful = network.StartClient (ip.text);
+        if (successful)
+            GameObject.FindGameObjectWithTag ("ClientPlayButton").GetComponent<Button> ().interactable = true;
     }
 
     public void SetMode (string mode_name)
@@ -337,7 +343,8 @@ public class Player : MonoBehaviour
     //functions to share to social media app
     public void shareOnSocialMedia()
     {
-        new NativeShare().SetText(IP).Share();
+        Text ip = GameObject.FindGameObjectWithTag ("HostIpAddress").GetComponent<Text> ();
+        new NativeShare ().SetText(ip.text).Share();
     }
 }
     
