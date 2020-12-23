@@ -97,12 +97,13 @@ public class GameLogic
 
 
     // methods implementing AI
-    public Vector2Int findOptimalMove ()
+    public Vector2Int findOptimalMove (bool aiPlaysX)
     {
         State[,] tempGrid = gridStates;
         int bestValue = -1000;
         int rowValue = 0;
         int colValue = 0;
+        State aiPlayer = aiPlaysX ? State.X : State.O;
 
         // check the gridStates and find the best next move
         for (int i = 0; i < 3; i++)
@@ -112,10 +113,10 @@ public class GameLogic
                 if (tempGrid[i, j] == State.Empty)
                 {
                     // we make a guess and AI decided to choose this 
-                    tempGrid[i, j] = State.X; // make a move AI is only X???
+                    tempGrid[i, j] = aiPlayer;
 
                      // calculate the cost of this step using the minimax
-                    int costMove = minimax(tempGrid, 0, false);
+                    int costMove = minimax(tempGrid, 0, false, aiPlaysX);
 
                     //remove this step
                     tempGrid[i, j] = State.Empty;
@@ -135,22 +136,23 @@ public class GameLogic
     }
 
     //minimax algorithm
-    private int minimax (State[,] tempGrid,   //I am not sure what type tempGrid is
-                   int depth, bool isMax)
+    private int minimax (State[,] tempGrid, int depth, bool isMax, bool aiPlaysX)
     {
-        int score = totalscorecheck(tempGrid);
+        int score = totalscorecheck(tempGrid, aiPlaysX);
+
+        State aiPlayer = aiPlaysX ? State.X : State.O;
+        State humanPlayer = aiPlaysX ? State.O : State.X;
 
         // maximizer won the game  
         if (score == 10)
-            return score;
+            return score - depth;
 
         // minimizer won the game   
         if (score == -10)
-            return score;
+            return score + depth;
 
         // no moves left and no winner 
-        // ? how to check
-        if(HasEmptyCell(tempGrid)) // maybe like this
+        if(HasEmptyCell(tempGrid))
             return 0;
 
         // maximizer's move 
@@ -166,10 +168,10 @@ public class GameLogic
                     if (tempGrid[i, j] == State.Empty)
                     {
                         // guess the step
-                        tempGrid[i, j] = State.X;
+                        tempGrid[i, j] = aiPlayer;
 
                         // minimax recursively to compute maximum value 
-                        best = Math.Max (best, minimax (tempGrid, depth + 1, !isMax));
+                        best = Math.Max (best, minimax (tempGrid, depth + 1, !isMax, aiPlaysX));
 
                         // back this step
                         tempGrid[i, j] = State.Empty;
@@ -192,10 +194,10 @@ public class GameLogic
                     if (tempGrid[i, j] == State.Empty)
                     {
                         // Make a guess
-                        tempGrid[i, j] = State.O;
+                        tempGrid[i, j] = humanPlayer;
 
                         // minimax recursively to compute minimum value 
-                        best = Math.Min (best, minimax (tempGrid, depth + 1, !isMax));
+                        best = Math.Min (best, minimax (tempGrid, depth + 1, !isMax, aiPlaysX));
 
                         // back this step
                         tempGrid[i, j] = State.Empty;
@@ -206,16 +208,19 @@ public class GameLogic
         }
     }
 
-    private int totalscorecheck (State[,] tempGrid)
+    private int totalscorecheck (State[,] tempGrid, bool aiPlaysX)
     {
+        State aiPlayer = aiPlaysX ? State.X : State.O;
+        State humanPlayer = aiPlaysX ? State.O : State.X;
+
         // Rows - X or O win
         for (int row = 0; row < 3; row++)
         {
             if (tempGrid[row, 0] == tempGrid[row, 1] && tempGrid[row, 1] == tempGrid[row, 2])
             {
-                if (tempGrid[row, 0] == State.X)
+                if (tempGrid[row, 0] == aiPlayer)
                     return +10;
-                else if (tempGrid[row, 0] == State.O)
+                else if (tempGrid[row, 0] == humanPlayer)
                     return -10;
             }
         }
@@ -225,10 +230,10 @@ public class GameLogic
         {
             if (tempGrid[0, col] == tempGrid[1, col] && tempGrid[1, col] == tempGrid[2, col])
             {
-                if (tempGrid[0, col] == State.X)
+                if (tempGrid[0, col] == aiPlayer)
                     return +10;
 
-                else if (tempGrid[0, col] == State.O)
+                else if (tempGrid[0, col] == humanPlayer)
                     return -10;
             }
         }
@@ -236,17 +241,17 @@ public class GameLogic
         // Diagonals - X or O win
         if (tempGrid[0, 0] == tempGrid[1, 1] && tempGrid[1, 1] == tempGrid[2, 2])
         {
-            if (tempGrid[0, 0] == State.X)
+            if (tempGrid[0, 0] == aiPlayer)
                 return +10;
-            else if (tempGrid[0, 0] == State.O)
+            else if (tempGrid[0, 0] == humanPlayer)
                 return -10;
         }
 
         if (tempGrid[0, 2] == tempGrid[1, 1] && tempGrid[1, 1] == tempGrid[2, 0])
         {
-            if (tempGrid[0, 2] == State.X)
+            if (tempGrid[0, 2] == aiPlayer)
                 return +10;
-            else if (tempGrid[0, 2] == State.O)
+            else if (tempGrid[0, 2] == humanPlayer)
                 return -10;
         }
 

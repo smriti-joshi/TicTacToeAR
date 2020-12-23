@@ -105,10 +105,10 @@ public class Player : MonoBehaviour
 
             if (selectedCell.x != -1 || selectedCell.y != -1)
             {
-                GameObject obj = !isPlayerOne ? CrossToPlace : ZeroToPlace;
+                GameObject obj = isPlayerOne ? CrossToPlace : ZeroToPlace;
                 ZerosOrCross[iter] = Instantiate (obj, gridCenters[selectedCell.x, selectedCell.y], new Quaternion ());
                 ZerosOrCross[iter].transform.Rotate (-90, 0, 0);
-                gameLogic.PlaceZeroOrCross (selectedCell, !isPlayerOne);
+                gameLogic.PlaceZeroOrCross (selectedCell, isPlayerOne);
 
                 audioData[0].Play (0);
                 iter++;
@@ -171,7 +171,7 @@ public class Player : MonoBehaviour
 
     private Vector2Int PlayRoundAI ()
     {
-        return gameLogic.findOptimalMove ();
+        return gameLogic.findOptimalMove (isPlayerOne);
     }
 
     private Vector2Int PlayRoundOnline ()
@@ -306,13 +306,14 @@ public class Player : MonoBehaviour
         if (role == "host")
         {
             network.StartHost ();
+            isPlayerOne = true;
         }
 
         if (role == "client")
         {
             //TextField(?) ip = GameObject.FindGameObjectWithTag ("ShootButton").GetComponent<TextField> ();
             //network.StartClient (ip.GetText());
-            ;
+            isPlayerOne = false;
         }
     }
 
