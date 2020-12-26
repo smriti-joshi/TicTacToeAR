@@ -152,7 +152,7 @@ public class GameLogic
             return score + depth;
 
         // no moves left and no winner 
-        if(HasEmptyCell(tempGrid))
+        if (!HasEmptyCell (tempGrid))
             return 0;
 
         // maximizer's move 
@@ -171,7 +171,7 @@ public class GameLogic
                         tempGrid[i, j] = aiPlayer;
 
                         // minimax recursively to compute maximum value 
-                        best = Math.Max (best, minimax (tempGrid, depth + 1, !isMax, aiPlaysX));
+                        best = Math.Max (best, minimax (tempGrid, depth + 1, false, aiPlaysX));
 
                         // back this step
                         tempGrid[i, j] = State.Empty;
@@ -197,7 +197,7 @@ public class GameLogic
                         tempGrid[i, j] = humanPlayer;
 
                         // minimax recursively to compute minimum value 
-                        best = Math.Min (best, minimax (tempGrid, depth + 1, !isMax, aiPlaysX));
+                        best = Math.Min (best, minimax (tempGrid, depth + 1, true, aiPlaysX));
 
                         // back this step
                         tempGrid[i, j] = State.Empty;
