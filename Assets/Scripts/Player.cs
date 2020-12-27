@@ -148,20 +148,22 @@ public class Player : MonoBehaviour
             rayManager.Raycast (Input.touches[0].position, hits, TrackableType.Planes);
 
             if (hits.Count > 0)
-                cell = GetClosestCell (hits[0].pose.position - new Vector3 (0, 0.2f, 0)); // compensate for the offset of the grid
-        }
-
-        if (mode == Mode.MultiOnline)
-        {
-            Packet toSend = new Packet
             {
-                id = 1,
-                message = "update",
-                row = cell.x,
-                column = cell.y
-            };
-            network.Send (toSend);
-        }
+                cell = GetClosestCell (hits[0].pose.position - new Vector3 (0, 0.2f, 0)); // compensate for the offset of the grid
+                
+                if (mode == Mode.MultiOnline)
+                {
+                    Packet toSend = new Packet
+                    {
+                        id = 1,
+                        message = "update",
+                        row = cell.x,
+                        column = cell.y
+                    };
+                    network.Send (toSend);
+                }
+            }
+        }        
         
         return cell;
     }
@@ -219,6 +221,9 @@ public class Player : MonoBehaviour
     {
         iter = 0;
         isPlayerOne = true;
+
+        if (mode == Mode.MultiOnline && !network.IsHost)
+            isPlayerOne = false;
 
         //To destroy the zeros and crosses
         for (int j = 0; j < ZerosOrCross.Length; j++)
@@ -304,6 +309,7 @@ public class Player : MonoBehaviour
         {
             hostPlayButton = GameObject.FindGameObjectWithTag ("HostPlayButton").GetComponent<Button> ();
             string ipAddress = network.StartHost ();
+            //network.Run ();
             Text ip = GameObject.FindGameObjectWithTag ("HostIpAddress").GetComponent<Text> ();
             ip.text = ipAddress;
             isPlayerOne = true;
@@ -320,7 +326,10 @@ public class Player : MonoBehaviour
         InputField ip = GameObject.FindGameObjectWithTag ("ClientIpAddress").GetComponent<InputField> ();
         bool successful = network.StartClient (ip.text);
         if (successful)
+        {
+            network.Run ();
             GameObject.FindGameObjectWithTag ("ClientPlayButton").GetComponent<Button> ().interactable = true;
+        }
     }
 
     public void SetMode (string mode_name)
