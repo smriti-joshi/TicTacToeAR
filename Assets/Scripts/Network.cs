@@ -35,7 +35,7 @@ class Network
     public bool HasUpdate { get => hasUpdate; set => hasUpdate = value; }
     public bool IsHost { get => isHost; set => isHost = value; }
 
-    public void StartHost ()
+    public string StartHost ()
     {
         // create socket to listen
         Socket socket = new Socket(AddressFamily.InterNetwork,SocketType.Stream, ProtocolType.Tcp);
@@ -45,16 +45,15 @@ class Network
 
         Thread thread = new Thread (() =>
         {
-            while (true)
-            {
-                Console.WriteLine ("waiting for new connection...");
-                clientSocket = socket.Accept ();
-                Console.WriteLine ("connected");
-            }
+            Console.WriteLine ("waiting for new connection...");
+            clientSocket = socket.Accept ();
+            Run ();
+            Console.WriteLine ("connected");
         });
 
         thread.Start ();
         isHost = true;
+        return GetLocalIPAddress ();
     }
 
     public bool StartClient (string ipAddress)
@@ -77,13 +76,30 @@ class Network
     {
         string jsonData = JsonConvert.SerializeObject(message);
         byte[] dataBytes = Encoding.Default.GetBytes(jsonData);
-        clientSocket.Send (dataBytes);
+        clientSocket.SendBufferSize = dataBytes.Length;
+        try
+        {
+            clientSocket.Send (dataBytes, dataBytes.Length, 0);
+        }
+        catch (Exception e)
+        {
+            return;
+        }
     }
 
     public Packet Receive ()
     {
-        byte[] buffer=new byte[1024*4];
-        int readBytes = clientSocket.Receive(buffer);
+        byte[] buffer=new byte[16];
+        int readBytes = 0;
+
+        try
+        {
+            readBytes = clientSocket.Receive(buffer);
+        }
+        catch (Exception e)
+        {
+            ;
+        }
         MemoryStream memoryStream = new MemoryStream();
 
         while (readBytes > 0)
@@ -137,6 +153,17 @@ class Network
         return message;
     }
 
+    public static string GetLocalIPAddress ()
+    {
+        string localIP;
+        using (Socket socket = new Socket (AddressFamily.InterNetwork, SocketType.Dgram, 0))
+        {
+            socket.Connect ("8.8.8.8", 65530);
+            IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
+            localIP = endPoint.Address.ToString ();
+        }
 
+        return localIP;
+    }
 }
 
