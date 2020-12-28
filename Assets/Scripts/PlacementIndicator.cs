@@ -9,6 +9,7 @@ public class PlacementIndicator : MonoBehaviour
     private ARRaycastManager rayManager;
     private GameObject visual;
     private bool enabled = false;
+    private bool placementIndicatorPlaced = false;
 
     private void Start()
     {
@@ -38,7 +39,10 @@ public class PlacementIndicator : MonoBehaviour
             transform.rotation = hits[0].pose.rotation;
 
             if (!visual.activeInHierarchy && enabled)
+            {
                 visual.SetActive(true);
+                placementIndicatorPlaced = true;
+            }
         }
     }
 
@@ -46,5 +50,8 @@ public class PlacementIndicator : MonoBehaviour
     {
         enabled = state;
     }
-
+    public bool IsPlacementIndicatorPlaced()
+    {
+        return placementIndicatorPlaced;
+    }
 }

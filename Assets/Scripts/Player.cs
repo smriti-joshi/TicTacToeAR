@@ -80,20 +80,23 @@ public class Player : MonoBehaviour
 
         if (!GridPlaced)
         {
-            if(playButtonClicked)
-            {                
-				if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
-				{
-					Transform trans = placementIndicator.transform;
-					trans.Translate (new Vector3 (0, -0.45f, -0.0f));
-					trans.Rotate(-90, 0, 0);
-                    Grid = Instantiate(ObjectToPlace, trans.position, trans.rotation);
-                    InitGrid (trans.position, 1.3f, trans.rotation, ZeroToPlace);
-                    audioData[1].Play(0);
+            if (placementIndicator.IsPlacementIndicatorPlaced())
+            {
+                if (playButtonClicked)
+                {
+                    if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
+                    {
+                        Transform trans = placementIndicator.transform;
+                        trans.Translate(new Vector3(0, -0.45f, -0.0f));
+                        trans.Rotate(-90, 0, 0);
+                        Grid = Instantiate(ObjectToPlace, trans.position, trans.rotation);
+                        InitGrid(trans.position, 1.3f, trans.rotation, ZeroToPlace);
+                        audioData[1].Play(0);
 
-					GridPlaced = true;
-					placementIndicator.Enable(false);
-				}
+                        GridPlaced = true;
+                        placementIndicator.Enable(false);
+                    }
+                }
             }
         }
         else
