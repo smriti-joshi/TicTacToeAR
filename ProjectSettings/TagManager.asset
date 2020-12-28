@@ -8,6 +8,8 @@ TagManager:
   - ClientPlayButton
   - HostIpAddress
   - ClientIpAddress
+  - GridSlider
+  - SliderCanvas
   layers:
   - Default
   - TransparentFX

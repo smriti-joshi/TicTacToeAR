@@ -46,7 +46,17 @@ public class Player : MonoBehaviour
     private Vector3[,] gridCenters = new Vector3[3, 3];
     private int iter;
     private float cellWidth;
+    private float originalPlane;
     // Start is called before the first frame update
+
+    private Transform trans;
+    private bool GridPositionFinalized = false;
+    public Canvas sliderCanvas;
+    public Slider gridSlider;
+    public Camera camera;
+   // private ARPlaneManager ManagerOfPlane;
+    private Plane GridPlaneFinalized;
+
     void Start ()
     {
         rayManager = FindObjectOfType<ARRaycastManager>();
@@ -86,20 +96,26 @@ public class Player : MonoBehaviour
                 {
                     if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
                     {
-                        Transform trans = placementIndicator.transform;
+                        trans = placementIndicator.transform;
                         trans.Translate(new Vector3(0, -0.45f, -0.0f));
                         trans.Rotate(-90, 0, 0);
                         Grid = Instantiate(ObjectToPlace, trans.position, trans.rotation);
-                        InitGrid(trans.position, 1.3f, trans.rotation, ZeroToPlace);
+                   
                         audioData[1].Play(0);
-
                         GridPlaced = true;
                         placementIndicator.Enable(false);
+                        originalPlane = trans.position.y;
+                        
+                        gridSlider.minValue = trans.position.y - 0.5f;
+                        gridSlider.maxValue = trans.position.y + 0.5f;
+                        gridSlider.value = trans.position.y;
+                        sliderCanvas.gameObject.SetActive(true);
+
                     }
                 }
             }
         }
-        else
+        else if (GridPositionFinalized)
         {            
             Vector2Int selectedCell = PlayRound();
 
@@ -148,11 +164,15 @@ public class Player : MonoBehaviour
         if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
         {
             List<ARRaycastHit> hits = new List<ARRaycastHit>();
-            rayManager.Raycast (Input.touches[0].position, hits, TrackableType.Planes);
+            Ray ray = camera.ScreenPointToRay(Input.touches[0].position);
+            //Initialise the enter variable
+            float enter = 0.0f;
 
-            if (hits.Count > 0)
+            if (GridPlaneFinalized.Raycast(ray, out enter))
             {
-                cell = GetClosestCell (hits[0].pose.position - new Vector3 (0, 0.2f, 0)); // compensate for the offset of the grid
+                //Get the point that is clicked
+                Vector3 hitPoint = ray.GetPoint(enter);
+                cell = GetClosestCell (hitPoint); // compensate for the offset of the grid
                 
                 if (mode == Mode.MultiOnline)
                 {
@@ -246,15 +266,16 @@ public class Player : MonoBehaviour
     {
         GridPlaced = false;
         Destroy(Grid);
-
         playButtonClicked = false;
         PlayAgain();
         StartWindow.SetActive(true);
+        GridPositionFinalized = false;
     }
 
     public void InitGrid (Vector3 gridCenter, float gridSize, Quaternion rotation, GameObject obj)
     {
-        cellWidth = gridSize / 3;        
+        cellWidth = gridSize / 3;
+        //gridCenter.y = gridSlider.value;
 
         gridCenters[0,0] = new Vector3 (gridCenter.x - cellWidth, gridCenter.y, gridCenter.z - cellWidth);
         gridCenters[0,1] = new Vector3 (gridCenter.x            , gridCenter.y, gridCenter.z - cellWidth);
@@ -291,7 +312,9 @@ public class Player : MonoBehaviour
         {
             for (int j = 0; j < 3; j++)
             {
-                float currentDistance = Vector3.Distance(gridCenters[i,j], pos);
+                Vector3 originalCenter = gridCenters[i, j];
+                //originalCenter.y = pos.y;
+                float currentDistance = Vector3.Distance(originalCenter, pos);
                 if (currentDistance < minDistance && gameLogic.GetCellState(new Vector2Int(i, j)) == State.Empty)
                 {
                     minDistance = currentDistance;
@@ -357,6 +380,26 @@ public class Player : MonoBehaviour
     {
         Text ip = GameObject.FindGameObjectWithTag ("HostIpAddress").GetComponent<Text> ();
         new NativeShare ().SetText(ip.text).Share();
+    }
+
+    public void AdjustGrid(float position)
+    {
+        Grid.transform.SetPositionAndRotation(new Vector3 (Grid.transform.position.x, position, Grid.transform.position.z), Grid.transform.rotation);
+    }
+
+    public void PlaceGridPlane()
+    {
+        if (GridPositionFinalized)
+        {
+            InitGrid(Grid.transform.position, 1.3f, Grid.transform.rotation, ZeroToPlace);
+            GridPlaneFinalized.Set3Points(gridCenters[0, 0], gridCenters[0, 2], gridCenters[2, 1]);
+            GridPlaneFinalized.Translate(new Vector3(0, -0.15f, 0));
+        }
+    }
+    public void SetGridPositionFinalized(bool res)
+    {
+        GridPositionFinalized = res;
+        PlaceGridPlane();
     }
 }
     
