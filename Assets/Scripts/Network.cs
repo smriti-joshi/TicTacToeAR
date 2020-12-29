@@ -139,7 +139,8 @@ class Network
     private void ProcessMessage (Packet packet)
     {
         // id = 0 -> player connected
-        // id = 0 -> player made a move
+        // id = 1 -> player made a move
+        // id = 2 -> player finalized the grid
         hasUpdate = true;
         messageCode = packet.id;
         message = packet;
