@@ -10,6 +10,10 @@ TagManager:
   - ClientIpAddress
   - GridSlider
   - SliderCanvas
+  - HostButton
+  - ClientButton
+  - HostShareButton
+  - ClientConnectButton
   layers:
   - Default
   - TransparentFX

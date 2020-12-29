@@ -1,10 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
-using UnityEngine.XR.ARSubsystems;
-using System.IO;
 
 
 public enum Mode
@@ -24,6 +21,10 @@ public class Player : MonoBehaviour
     public GameObject GameOverScreen;
     public GameObject StartWindow;
 
+    public Canvas sliderCanvas;
+    public Slider gridSlider;
+    public Camera arCamera;
+
     private ARRaycastManager rayManager;
     private PlacementIndicator placementIndicator;
     private AudioSource[] audioData;
@@ -36,87 +37,93 @@ public class Player : MonoBehaviour
     private GameObject Grid;
     private GameObject[] ZerosOrCross = new GameObject[10];
 
-    //Boolean variables
     private bool playButtonClicked = false; // Play button from start menu
     private bool GridPlaced = false;        // Grid is placed
     private bool gameOverDisplayed = false; // Game over window is displayed
     private bool isPlayerOne = true;
+    private bool playerOneGridPositionFinalized = false;
+    private bool playerTwoGridPositionFinalized = false;
 
     private Mode mode;
     private Vector3[,] gridCenters = new Vector3[3, 3];
     private int iter;
     private float cellWidth;
-    private float originalPlane;
-    // Start is called before the first frame update
-
     private Transform trans;
-    private bool GridPositionFinalized = false;
-    public Canvas sliderCanvas;
-    public Slider gridSlider;
-    public Camera camera;
-   // private ARPlaneManager ManagerOfPlane;
-    private Plane GridPlaneFinalized;
+    private Plane finalGridPlane;
+
 
     void Start ()
     {
-        rayManager = FindObjectOfType<ARRaycastManager>();
-        placementIndicator = FindObjectOfType<PlacementIndicator>();
-        audioData = GetComponents<AudioSource>();
+        rayManager = FindObjectOfType<ARRaycastManager> ();
+        placementIndicator = FindObjectOfType<PlacementIndicator> ();
+        audioData = GetComponents<AudioSource> ();
         iter = 0;
     }
 
-    // Update is called once per frame
-    void Update()
+    void Update ()
     {
         if (mode == Mode.MultiOnline && network.IsHost && !hostPlayButton.interactable && !playButtonClicked)
         {
-            if (network.HasUpdate)
+            if (network.HasUpdate && network.MessageCode == 0)
             {
-                Packet message = network.GetMessage ();
-                if (message.id == 0)
-                {
-                    // enable 
-                    hostPlayButton.interactable = true;
-                }
+                network.GetMessage ();
+                hostPlayButton.interactable = true;
             }
         }
 
-        if (gameLogic.IsGameOver())
+        if (mode == Mode.MultiOnline && playerOneGridPositionFinalized && !playerTwoGridPositionFinalized)
+        {
+            if (network.HasUpdate && network.MessageCode == 2)
+            {
+                network.GetMessage ();
+                playerTwoGridPositionFinalized = true;
+            }
+        }
+
+        if (gameLogic.IsGameOver ())
         {
             State winner = gameLogic.WhoWon();
-            ShowGameOverWindow(winner);
+            ShowGameOverWindow (winner);
             return;
         }
 
         if (!GridPlaced)
         {
-            if (placementIndicator.IsPlacementIndicatorPlaced())
+            if (placementIndicator.IsPlacementIndicatorPlaced ())
             {
                 if (playButtonClicked)
                 {
                     if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
                     {
                         trans = placementIndicator.transform;
-                        trans.Translate(new Vector3(0, -0.45f, -0.0f));
-                        trans.Rotate(-90, 0, 0);
-                        Grid = Instantiate(ObjectToPlace, trans.position, trans.rotation);
-                   
-                        audioData[1].Play(0);
+                        trans.Translate (new Vector3 (0, -0.45f, -0.0f));
+                        trans.Rotate (-90, 0, 0);
+                        Grid = Instantiate (ObjectToPlace, trans.position, trans.rotation);
+
+                        audioData[1].Play (0);
                         GridPlaced = true;
-                        placementIndicator.Enable(false);
-                        originalPlane = trans.position.y;
-                        
+                        placementIndicator.Enable (false);
+
                         gridSlider.minValue = trans.position.y - 0.5f;
                         gridSlider.maxValue = trans.position.y + 0.5f;
                         gridSlider.value = trans.position.y;
-                        sliderCanvas.gameObject.SetActive(true);
+                        sliderCanvas.gameObject.SetActive (true);
 
+                        if (mode == Mode.MultiOnline)
+                        {
+                            Packet toSend = new Packet
+                            {
+                                id = 2,
+                                message = "gridFinalized"
+                            };
+                            network.Send (toSend);
+                        }
                     }
                 }
             }
         }
-        else if (GridPositionFinalized)
-        {            
+        else if (playerOneGridPositionFinalized && playerTwoGridPositionFinalized)
+        {
             Vector2Int selectedCell = PlayRound();
 
             if (selectedCell.x != -1 || selectedCell.y != -1)
@@ -129,7 +136,7 @@ public class Player : MonoBehaviour
                 audioData[0].Play (0);
                 iter++;
                 isPlayerOne = !isPlayerOne;
-            }                       
+            }
         }
     }
 
@@ -150,7 +157,7 @@ public class Player : MonoBehaviour
                 cell = PlayRoundLocal ();
                 break;
             case Mode.MultiOnline:
-                cell = PlayRoundOnline();
+                cell = PlayRoundOnline ();
                 break;
         }
 
@@ -163,17 +170,15 @@ public class Player : MonoBehaviour
 
         if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
         {
-            List<ARRaycastHit> hits = new List<ARRaycastHit>();
-            Ray ray = camera.ScreenPointToRay(Input.touches[0].position);
-            //Initialise the enter variable
-            float enter = 0.0f;
+            Ray ray = arCamera.ScreenPointToRay(Input.touches[0].position);
+            float enter;
 
-            if (GridPlaneFinalized.Raycast(ray, out enter))
+            if (finalGridPlane.Raycast (ray, out enter))
             {
                 //Get the point that is clicked
                 Vector3 hitPoint = ray.GetPoint(enter);
                 cell = GetClosestCell (hitPoint); // compensate for the offset of the grid
-                
+
                 if (mode == Mode.MultiOnline)
                 {
                     Packet toSend = new Packet
@@ -186,8 +191,8 @@ public class Player : MonoBehaviour
                     network.Send (toSend);
                 }
             }
-        }        
-        
+        }
+
         return cell;
     }
 
@@ -198,27 +203,26 @@ public class Player : MonoBehaviour
 
     private Vector2Int PlayRoundOnline ()
     {
-        if (network.HasUpdate)
+        if (network.HasUpdate && network.MessageCode == 1)
         {
             Packet message = network.GetMessage ();
             // player placed marker
-            if (message .id == 1)
-                return new Vector2Int (message.row, message.column);
+            return new Vector2Int (message.row, message.column);
         }
 
         return new Vector2Int (-1, -1);
     }
 
     // Starts the game when play button is clicked
-    public void PlayButtonClicked()
+    public void PlayButtonClicked ()
     {
         playButtonClicked = true;
     }
 
     // Shows the game over window
-    private void ShowGameOverWindow(State winner)
+    private void ShowGameOverWindow (State winner)
     {
-        if(!gameOverDisplayed)
+        if (!gameOverDisplayed)
         {
             switch (winner)
             {
@@ -240,7 +244,7 @@ public class Player : MonoBehaviour
         }
     }
 
-    public void PlayAgain()
+    public void PlayAgain ()
     {
         iter = 0;
         isPlayerOne = true;
@@ -251,41 +255,42 @@ public class Player : MonoBehaviour
         //To destroy the zeros and crosses
         for (int j = 0; j < ZerosOrCross.Length; j++)
         {
-            Destroy(ZerosOrCross[j]);
+            Destroy (ZerosOrCross[j]);
         }
 
         //Update params in gamelogic
-        gameLogic.RestartGame();
-        Winner.SetActive(false);
+        gameLogic.RestartGame ();
+        Winner.SetActive (false);
 
         //Hide the gameover window
         gameOverDisplayed = false;
     }
 
-    public void ReturnToMenu()
+    public void ReturnToMenu ()
     {
         GridPlaced = false;
-        Destroy(Grid);
+        Destroy (Grid);
         playButtonClicked = false;
-        PlayAgain();
-        StartWindow.SetActive(true);
-        GridPositionFinalized = false;
+        PlayAgain ();
+        StartWindow.SetActive (true);
+        network.Disconnect ();
+        playerOneGridPositionFinalized = false;
+        playerTwoGridPositionFinalized = false;
     }
 
     public void InitGrid (Vector3 gridCenter, float gridSize, Quaternion rotation, GameObject obj)
     {
         cellWidth = gridSize / 3;
-        //gridCenter.y = gridSlider.value;
 
-        gridCenters[0,0] = new Vector3 (gridCenter.x - cellWidth, gridCenter.y, gridCenter.z - cellWidth);
-        gridCenters[0,1] = new Vector3 (gridCenter.x            , gridCenter.y, gridCenter.z - cellWidth);
-        gridCenters[0,2] = new Vector3 (gridCenter.x + cellWidth, gridCenter.y, gridCenter.z - cellWidth);
-        gridCenters[1,0] = new Vector3 (gridCenter.x - cellWidth, gridCenter.y, gridCenter.z            );
-        gridCenters[1,1] = new Vector3 (gridCenter.x            , gridCenter.y, gridCenter.z            );
-        gridCenters[1,2] = new Vector3 (gridCenter.x + cellWidth, gridCenter.y, gridCenter.z            );
-        gridCenters[2,0] = new Vector3 (gridCenter.x - cellWidth, gridCenter.y, gridCenter.z + cellWidth);
-        gridCenters[2,1] = new Vector3 (gridCenter.x            , gridCenter.y, gridCenter.z + cellWidth);
-        gridCenters[2,2] = new Vector3 (gridCenter.x + cellWidth, gridCenter.y, gridCenter.z + cellWidth);
+        gridCenters[0, 0] = new Vector3 (gridCenter.x - cellWidth, gridCenter.y, gridCenter.z - cellWidth);
+        gridCenters[0, 1] = new Vector3 (gridCenter.x, gridCenter.y, gridCenter.z - cellWidth);
+        gridCenters[0, 2] = new Vector3 (gridCenter.x + cellWidth, gridCenter.y, gridCenter.z - cellWidth);
+        gridCenters[1, 0] = new Vector3 (gridCenter.x - cellWidth, gridCenter.y, gridCenter.z);
+        gridCenters[1, 1] = new Vector3 (gridCenter.x, gridCenter.y, gridCenter.z);
+        gridCenters[1, 2] = new Vector3 (gridCenter.x + cellWidth, gridCenter.y, gridCenter.z);
+        gridCenters[2, 0] = new Vector3 (gridCenter.x - cellWidth, gridCenter.y, gridCenter.z + cellWidth);
+        gridCenters[2, 1] = new Vector3 (gridCenter.x, gridCenter.y, gridCenter.z + cellWidth);
+        gridCenters[2, 2] = new Vector3 (gridCenter.x + cellWidth, gridCenter.y, gridCenter.z + cellWidth);
 
         for (int i = 0; i < 3; i++)
         {
@@ -315,7 +320,7 @@ public class Player : MonoBehaviour
                 Vector3 originalCenter = gridCenters[i, j];
                 //originalCenter.y = pos.y;
                 float currentDistance = Vector3.Distance(originalCenter, pos);
-                if (currentDistance < minDistance && gameLogic.GetCellState(new Vector2Int(i, j)) == State.Empty)
+                if (currentDistance < minDistance && gameLogic.GetCellState (new Vector2Int (i, j)) == State.Empty)
                 {
                     minDistance = currentDistance;
                     selectedCell = new Vector2Int (i, j);
@@ -335,7 +340,6 @@ public class Player : MonoBehaviour
         {
             hostPlayButton = GameObject.FindGameObjectWithTag ("HostPlayButton").GetComponent<Button> ();
             string ipAddress = network.StartHost ();
-            //network.Run ();
             Text ip = GameObject.FindGameObjectWithTag ("HostIpAddress").GetComponent<Text> ();
             ip.text = ipAddress;
             isPlayerOne = true;
@@ -375,31 +379,22 @@ public class Player : MonoBehaviour
         }
     }
 
-    //functions to share to social media app
-    public void shareOnSocialMedia()
+    public void ShareOnSocialMedia ()
     {
         Text ip = GameObject.FindGameObjectWithTag ("HostIpAddress").GetComponent<Text> ();
-        new NativeShare ().SetText(ip.text).Share();
+        new NativeShare ().SetText (ip.text).Share ();
     }
 
-    public void AdjustGrid(float position)
+    public void AdjustGrid (float position)
     {
-        Grid.transform.SetPositionAndRotation(new Vector3 (Grid.transform.position.x, position, Grid.transform.position.z), Grid.transform.rotation);
+        Grid.transform.SetPositionAndRotation (new Vector3 (Grid.transform.position.x, position, Grid.transform.position.z), Grid.transform.rotation);
     }
 
-    public void PlaceGridPlane()
+    public void SetGridPositionFinalized (bool res)
     {
-        if (GridPositionFinalized)
-        {
-            InitGrid(Grid.transform.position, 1.3f, Grid.transform.rotation, ZeroToPlace);
-            GridPlaneFinalized.Set3Points(gridCenters[0, 0], gridCenters[0, 2], gridCenters[2, 1]);
-            GridPlaneFinalized.Translate(new Vector3(0, -0.15f, 0));
-        }
-    }
-    public void SetGridPositionFinalized(bool res)
-    {
-        GridPositionFinalized = res;
-        PlaceGridPlane();
+        playerOneGridPositionFinalized = res;
+        InitGrid (Grid.transform.position, 1.3f, Grid.transform.rotation, ZeroToPlace);
+        finalGridPlane.Set3Points (gridCenters[0, 0], gridCenters[0, 2], gridCenters[2, 1]);
+        finalGridPlane.Translate (new Vector3 (0, -0.15f, 0));
     }
 }
-    

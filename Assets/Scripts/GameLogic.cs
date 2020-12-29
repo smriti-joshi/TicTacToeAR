@@ -24,31 +24,31 @@ public class GameLogic
         return instance;
     }
 
-    public void PlaceZeroOrCross(Vector2Int cell, bool isCross)
+    public void PlaceZeroOrCross (Vector2Int cell, bool isCross)
     {
         gridStates[cell.x, cell.y] = isCross ? State.X : State.O;
         round++;
         CheckIfGameOver ();
     }
 
-    public State GetCellState(Vector2Int cell)
+    public State GetCellState (Vector2Int cell)
     {
         return gridStates[cell.x, cell.y];
     }
 
 
-    public bool IsGameOver()
+    public bool IsGameOver ()
     {
         return isGameOver;
     }
 
-    public State WhoWon()
+    public State WhoWon ()
     {
         Debug.Assert (isGameOver);
         return winner;
     }
 
-    public void RestartGame()
+    public void RestartGame ()
     {
         isGameOver = false;
         round = 1;
@@ -56,28 +56,21 @@ public class GameLogic
         gridStates = new State[3, 3];
     }
 
-    private void CheckIfGameOver()
+    private void CheckIfGameOver ()
     {
-        if (round > 9)
-        {
-            isGameOver = true;
-            winner = State.Empty;
-            return;
-        }
-
         // horizontally and vertically
         for (int i = 0; i < 3 && winner == State.Empty; i++)
         {
-            if (gridStates[i,0] != State.Empty && gridStates[i,0] == gridStates[i,1] && gridStates[i,1] == gridStates[i,2])
+            if (gridStates[i, 0] != State.Empty && gridStates[i, 0] == gridStates[i, 1] && gridStates[i, 1] == gridStates[i, 2])
             {
                 isGameOver = true;
                 winner = gridStates[i, 0];
             }
 
-            if (gridStates[0,i] != State.Empty && gridStates[0,i] == gridStates[1,i] && gridStates[1,i] == gridStates[2,i])
+            if (gridStates[0, i] != State.Empty && gridStates[0, i] == gridStates[1, i] && gridStates[1, i] == gridStates[2, i])
             {
                 isGameOver = true;
-                winner = gridStates[0,i];
+                winner = gridStates[0, i];
             }
         }
 
@@ -93,6 +86,9 @@ public class GameLogic
             isGameOver = true;
             winner = gridStates[0, 2];
         }
+
+        if (round > 9)
+            isGameOver = true;
     }
 
 
@@ -115,7 +111,7 @@ public class GameLogic
                     // we make a guess and AI decided to choose this 
                     tempGrid[i, j] = aiPlayer;
 
-                     // calculate the cost of this step using the minimax
+                    // calculate the cost of this step using the minimax
                     int costMove = minimax(tempGrid, 0, false, aiPlaysX);
 
                     //remove this step
