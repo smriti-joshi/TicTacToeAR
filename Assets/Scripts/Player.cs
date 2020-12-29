@@ -122,8 +122,11 @@ public class Player : MonoBehaviour
                 }
             }
         }
-        else if (playerOneGridPositionFinalized && playerTwoGridPositionFinalized)
+        else if (playerOneGridPositionFinalized)
         {
+            if (mode == Mode.MultiOnline && !playerTwoGridPositionFinalized)
+                return;
+
             Vector2Int selectedCell = PlayRound();
 
             if (selectedCell.x != -1 || selectedCell.y != -1)
@@ -273,9 +276,13 @@ public class Player : MonoBehaviour
         playButtonClicked = false;
         PlayAgain ();
         StartWindow.SetActive (true);
-        network.Disconnect ();
         playerOneGridPositionFinalized = false;
-        playerTwoGridPositionFinalized = false;
+        
+        if (mode == Mode.MultiOnline)
+        {
+            network.Disconnect ();
+            playerTwoGridPositionFinalized = false;
+        }
     }
 
     public void InitGrid (Vector3 gridCenter, float gridSize, Quaternion rotation, GameObject obj)
