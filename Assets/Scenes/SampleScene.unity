@@ -1200,6 +1200,7 @@ MonoBehaviour:
     type: 3}
   ZeroToPlace: {fileID: 8428744309013739736, guid: ef4f3ebb13d20ca4d885f5f07848e4ad,
     type: 3}
+  anchorManager: {fileID: 2102979227}
   CrossWinnerScreen: {fileID: 122549822}
   ZeroWinnerScreen: {fileID: 2020154887}
   GameOverScreen: {fileID: 1607436884}
@@ -1207,6 +1208,7 @@ MonoBehaviour:
   sliderCanvas: {fileID: 441468328}
   gridSlider: {fileID: 733513771}
   arCamera: {fileID: 1147796124}
+  ARCoreDeviceTransform: {fileID: 0}
 --- !u!4 &423586087
 Transform:
   m_ObjectHideFlags: 0
@@ -3265,6 +3267,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_AttemptUpdate: 1
   m_MatchFrameRate: 1
+  m_TrackingMode: 2
 --- !u!4 &1042539982
 Transform:
   m_ObjectHideFlags: 0
@@ -3455,6 +3458,55 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 12
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1143148496
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1143148498}
+  - component: {fileID: 1143148497}
+  m_Layer: 0
+  m_Name: ARCore Extensions
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1143148497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1143148496}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b50ad3f5d9024549b0a549c5a03a084, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Session: {fileID: 1042539981}
+  SessionOrigin: {fileID: 2102979225}
+  CameraManager: {fileID: 1147796126}
+  ARCoreExtensionsConfig: {fileID: 11400000, guid: 302a8d6755a19db428a02c114a153a3b,
+    type: 2}
+  CameraConfigFilter: {fileID: 0}
+--- !u!4 &1143148498
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1143148496}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 14
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1147796123
 GameObject:
   m_ObjectHideFlags: 0
@@ -3470,7 +3522,7 @@ GameObject:
   - component: {fileID: 1147796125}
   m_Layer: 0
   m_Name: AR Camera
-  m_TagString: Untagged
+  m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3532,8 +3584,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_UseCustomMaterial: 0
   m_CustomMaterial: {fileID: 0}
-  m_UseCustomRendererAsset: 0
-  m_CustomRendererAsset: {fileID: 0}
 --- !u!114 &1147796126
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3546,8 +3596,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4966719baa26e4b0e8231a24d9bd491a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_FocusMode: 1
-  m_LightEstimationMode: 0
+  m_FocusMode: -1
+  m_LightEstimationMode: -1
+  m_AutoFocus: 1
+  m_LightEstimation: 0
+  m_FacingDirection: 1
 --- !u!114 &1147796127
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6415,6 +6468,7 @@ GameObject:
   - component: {fileID: 2102979225}
   - component: {fileID: 2102979224}
   - component: {fileID: 2102979223}
+  - component: {fileID: 2102979227}
   m_Layer: 0
   m_Name: AR Session Origin
   m_TagString: Untagged
@@ -6448,6 +6502,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa17d122634046b4a8e23048891fafc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_RaycastPrefab: {fileID: 0}
 --- !u!114 &2102979225
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6476,3 +6531,16 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2102979227
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2102979222}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 728ad7fae8e460a4ba41265c7308d757, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_AnchorPrefab: {fileID: 0}

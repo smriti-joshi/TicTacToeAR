@@ -12,6 +12,7 @@ public struct Packet
     public string message;
     public int row;
     public int column;
+    public string anchorId;
 
     public Packet (string message)
     {
@@ -19,6 +20,7 @@ public struct Packet
         this.message = message;
         row = -1;
         column = -1;
+        anchorId = "";
     }
 }
 

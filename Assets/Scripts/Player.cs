@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using Google.XR.ARCoreExtensions;
+using Google.XR;
+using Google;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
@@ -6,7 +9,7 @@ using UnityEngine.XR.ARFoundation;
 
 public enum Mode
 {
-    Single, MultiLocal, MultiOnline
+    Single, MultiLocal, MultiOnline, MultiOnlineSynchronized
 }
 
 
@@ -15,6 +18,7 @@ public class Player : MonoBehaviour
     public GameObject ObjectToPlace;
     public GameObject CrossToPlace;
     public GameObject ZeroToPlace;
+    public ARAnchorManager anchorManager;
 
     public GameObject CrossWinnerScreen;
     public GameObject ZeroWinnerScreen;
@@ -24,6 +28,7 @@ public class Player : MonoBehaviour
     public Canvas sliderCanvas;
     public Slider gridSlider;
     public Camera arCamera;
+    public Transform ARCoreDeviceTransform;
 
     private ARRaycastManager rayManager;
     private PlacementIndicator placementIndicator;
@@ -41,6 +46,7 @@ public class Player : MonoBehaviour
     private bool GridPlaced = false;        // Grid is placed
     private bool gameOverDisplayed = false; // Game over window is displayed
     private bool isPlayerOne = true;
+    private bool anchorSent = false;
     private bool playerOneGridPositionFinalized = false;
     private bool playerTwoGridPositionFinalized = false;
 
@@ -50,6 +56,7 @@ public class Player : MonoBehaviour
     private float cellWidth;
     private Transform trans;
     private Plane finalGridPlane;
+    private ARCloudAnchor cloudAnchor;
 
 
     void Start ()
@@ -62,7 +69,7 @@ public class Player : MonoBehaviour
 
     void Update ()
     {
-        if (mode == Mode.MultiOnline && network.IsHost && !hostPlayButton.interactable && !playButtonClicked)
+        if ((mode == Mode.MultiOnline || mode == Mode.MultiOnlineSynchronized) && network.IsHost && !hostPlayButton.interactable && !playButtonClicked)
         {
             if (network.HasUpdate && network.MessageCode == 0)
             {
@@ -71,13 +78,25 @@ public class Player : MonoBehaviour
             }
         }
 
-        if (mode == Mode.MultiOnline && playerOneGridPositionFinalized && !playerTwoGridPositionFinalized)
+        if ((mode == Mode.MultiOnline || mode == Mode.MultiOnlineSynchronized) && playerOneGridPositionFinalized && !playerTwoGridPositionFinalized)
         {
             if (network.HasUpdate && network.MessageCode == 2)
             {
                 network.GetMessage ();
                 playerTwoGridPositionFinalized = true;
             }
+        }
+
+        if (mode == Mode.MultiOnlineSynchronized && network.IsHost && !playerTwoGridPositionFinalized && cloudAnchor && cloudAnchor.cloudAnchorState == CloudAnchorState.Success && !anchorSent)
+        {
+            Packet toSend = new Packet
+            {
+                id = 3,
+                message = "anchorCreated",
+                anchorId = cloudAnchor.cloudAnchorId
+            };
+            network.Send (toSend);
+            anchorSent = true;
         }
 
         if (gameLogic.IsGameOver ())
@@ -93,24 +112,48 @@ public class Player : MonoBehaviour
             {
                 if (playButtonClicked)
                 {
-                    if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
+                    if (mode == Mode.Single || mode == Mode.MultiLocal || mode == Mode.MultiOnline || (mode == Mode.MultiOnlineSynchronized && network.IsHost))
                     {
-                        trans = placementIndicator.transform;
-                        trans.Translate (new Vector3 (0, -0.45f, -0.0f));
-                        trans.Rotate (-90, 0, 0);
-                        Grid = Instantiate (ObjectToPlace, trans.position, trans.rotation);
-
-                        audioData[1].Play (0);
-                        GridPlaced = true;
-                        placementIndicator.Enable (false);
-
-                        gridSlider.minValue = trans.position.y - 0.5f;
-                        gridSlider.maxValue = trans.position.y + 0.5f;
-                        gridSlider.value = trans.position.y;
-                        sliderCanvas.gameObject.SetActive (true);
-
-                        if (mode == Mode.MultiOnline)
+                        if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
                         {
+                            trans = placementIndicator.transform;
+                            trans.Translate (new Vector3 (0, -0.45f, -0.0f));
+                            trans.Rotate (-90, 0, 0);
+                            Grid = Instantiate (ObjectToPlace, trans.position, trans.rotation);
+
+                            audioData[1].Play (0);
+                            GridPlaced = true;
+                            placementIndicator.Enable (false);
+
+                            gridSlider.minValue = trans.position.y - 0.5f;
+                            gridSlider.maxValue = trans.position.y + 0.5f;
+                            gridSlider.value = trans.position.y;
+                            sliderCanvas.gameObject.SetActive (true);
+                        }
+                    }
+                    else // mode == Mode.MultiOnlineSynchronized && !network.IsHost
+                    {
+                        if (network.HasUpdate && network.MessageCode == 3)
+                        {
+                            Packet message = network.GetMessage ();
+                            cloudAnchor = anchorManager.ResolveCloudAnchorId (message.anchorId);
+                        }
+
+                        if (cloudAnchor && cloudAnchor.cloudAnchorState == CloudAnchorState.Success)
+                        {
+                            //Pose worldPose = WorldToAnchorPose(new Pose(ARCoreDeviceTransform.position,
+                                                         //ARCoreDeviceTransform.rotation));
+                            //ARCoreDeviceTransform.SetPositionAndRotation (worldPose.position, worldPose.rotation);
+
+                            Grid = Instantiate (ObjectToPlace, cloudAnchor.transform.position, cloudAnchor.transform.rotation); ;
+                            Grid.transform.SetParent (cloudAnchor.transform);
+                            audioData[1].Play (0);
+                            GridPlaced = true;
+                            placementIndicator.Enable (false);
+                            SetGridPositionFinalized (true);
+
+                            playerTwoGridPositionFinalized = true;
+
                             Packet toSend = new Packet
                             {
                                 id = 2,
@@ -124,7 +167,7 @@ public class Player : MonoBehaviour
         }
         else if (playerOneGridPositionFinalized)
         {
-            if (mode == Mode.MultiOnline && !playerTwoGridPositionFinalized)
+            if ((mode == Mode.MultiOnline || mode == Mode.MultiOnlineSynchronized) && !playerTwoGridPositionFinalized)
                 return;
 
             Vector2Int selectedCell = PlayRound();
@@ -160,6 +203,7 @@ public class Player : MonoBehaviour
                 cell = PlayRoundLocal ();
                 break;
             case Mode.MultiOnline:
+            case Mode.MultiOnlineSynchronized:
                 cell = PlayRoundOnline ();
                 break;
         }
@@ -182,7 +226,7 @@ public class Player : MonoBehaviour
                 Vector3 hitPoint = ray.GetPoint(enter);
                 cell = GetClosestCell (hitPoint); // compensate for the offset of the grid
 
-                if (mode == Mode.MultiOnline)
+                if ((mode == Mode.MultiOnline || mode == Mode.MultiOnlineSynchronized))
                 {
                     Packet toSend = new Packet
                     {
@@ -278,7 +322,7 @@ public class Player : MonoBehaviour
         StartWindow.SetActive (true);
         playerOneGridPositionFinalized = false;
         
-        if (mode == Mode.MultiOnline)
+        if ((mode == Mode.MultiOnline || mode == Mode.MultiOnlineSynchronized))
         {
             network.Disconnect ();
             playerTwoGridPositionFinalized = false;
@@ -377,10 +421,10 @@ public class Player : MonoBehaviour
                 mode = Mode.Single;
                 break;
             case "MultiLocal":
-                mode = Mode.MultiLocal;
+                mode = Mode.MultiLocal; 
                 break;
             case "MultiOnline":
-                mode = Mode.MultiOnline;
+                mode = Mode.MultiOnlineSynchronized;
                 network = new Network ();
                 break;
         }
@@ -403,5 +447,42 @@ public class Player : MonoBehaviour
         InitGrid (Grid.transform.position, 1.3f, Grid.transform.rotation, ZeroToPlace);
         finalGridPlane.Set3Points (gridCenters[0, 0], gridCenters[0, 2], gridCenters[2, 1]);
         finalGridPlane.Translate (new Vector3 (0, -0.15f, 0));
+
+        if (mode == Mode.MultiOnline)
+        {
+            Packet toSend = new Packet
+            {
+                id = 2,
+                message = "gridFinalized"
+            };
+            network.Send (toSend);
+        }
+
+        if (mode == Mode.MultiOnlineSynchronized)
+        {
+            anchorManager.HostCloudAnchor (anchorManager.AddAnchor (new Pose()));
+
+            ARAnchor localAnchor = anchorManager.AddAnchor (new Pose (Grid.transform.position, Grid.transform.rotation));
+            try
+            {
+                cloudAnchor = anchorManager.HostCloudAnchor (localAnchor, 1);
+            }
+            catch (System.Exception e)
+            {
+                ;
+            }
+        }
+    }
+
+    private Pose WorldToAnchorPose (Pose pose)
+    {
+        Matrix4x4 anchorTWorld = Matrix4x4.TRS(
+                cloudAnchor.transform.position, cloudAnchor.transform.rotation, Vector3.one).inverse;
+
+        Vector3 position = anchorTWorld.MultiplyPoint(pose.position);
+        Quaternion rotation = pose.rotation * Quaternion.LookRotation(
+                anchorTWorld.GetColumn(2), anchorTWorld.GetColumn(1));
+
+        return new Pose (position, rotation);
     }
 }
