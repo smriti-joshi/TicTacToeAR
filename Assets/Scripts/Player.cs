@@ -424,8 +424,12 @@ public class Player : MonoBehaviour
                 mode = Mode.MultiLocal; 
                 break;
             case "MultiOnline":
-                mode = Mode.MultiOnlineSynchronized;
+                mode = Mode.MultiOnline;
                 network = new Network ();
+                break;
+            case "MultiOnlineSynchronized":
+                mode = Mode.MultiOnlineSynchronized;
+                network = new Network();
                 break;
         }
     }
