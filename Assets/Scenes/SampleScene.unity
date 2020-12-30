@@ -1200,7 +1200,7 @@ MonoBehaviour:
     type: 3}
   ZeroToPlace: {fileID: 8428744309013739736, guid: ef4f3ebb13d20ca4d885f5f07848e4ad,
     type: 3}
-  anchorManager: {fileID: 0}
+  anchorManager: {fileID: 2102979227}
   CrossWinnerScreen: {fileID: 122549822}
   ZeroWinnerScreen: {fileID: 2020154887}
   GameOverScreen: {fileID: 1607436884}
@@ -4741,7 +4741,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 3}
+    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
     m_FontSize: 18
     m_FontStyle: 0
     m_BestFit: 0
@@ -5405,7 +5405,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 3}
+    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
     m_FontSize: 14
     m_FontStyle: 0
     m_BestFit: 0
@@ -6587,7 +6587,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 3}
+    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
     m_FontSize: 14
     m_FontStyle: 2
     m_BestFit: 0

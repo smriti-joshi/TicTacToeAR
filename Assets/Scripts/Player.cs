@@ -57,6 +57,7 @@ public class Player : MonoBehaviour
     private Transform trans;
     private Plane finalGridPlane;
     private ARCloudAnchor cloudAnchor;
+    private Transform anchorTransform = null;
 
 
     void Start ()
@@ -106,6 +107,14 @@ public class Player : MonoBehaviour
             return;
         }
 
+        if (mode == Mode.MultiOnlineSynchronized && !network.IsHost && anchorTransform && cloudAnchor && cloudAnchor.cloudAnchorState == CloudAnchorState.Success && Grid && anchorTransform != Grid.transform)
+        {
+            InitGrid (Grid.transform.position, 1.3f, Grid.transform.rotation, ZeroToPlace, -1);
+            finalGridPlane.Set3Points (gridCenters[0, 0], gridCenters[0, 2], gridCenters[2, 1]);
+            finalGridPlane.Translate (new Vector3 (0, -0.15f, 0));
+            anchorTransform = Grid.transform;
+        }
+
         if (!GridPlaced)
         {
             if (placementIndicator.IsPlacementIndicatorPlaced ())
@@ -141,12 +150,9 @@ public class Player : MonoBehaviour
 
                         if (cloudAnchor && cloudAnchor.cloudAnchorState == CloudAnchorState.Success)
                         {
-                            //Pose worldPose = WorldToAnchorPose(new Pose(ARCoreDeviceTransform.position,
-                                                         //ARCoreDeviceTransform.rotation));
-                            //ARCoreDeviceTransform.SetPositionAndRotation (worldPose.position, worldPose.rotation);
-
                             Grid = Instantiate (ObjectToPlace, cloudAnchor.transform.position, cloudAnchor.transform.rotation); ;
                             Grid.transform.SetParent (cloudAnchor.transform);
+                            anchorTransform = cloudAnchor.transform;
                             audioData[1].Play (0);
                             GridPlaced = true;
                             placementIndicator.Enable (false);
@@ -296,7 +302,7 @@ public class Player : MonoBehaviour
         iter = 0;
         isPlayerOne = true;
 
-        if (mode == Mode.MultiOnline && !network.IsHost)
+        if ((mode == Mode.MultiOnline || mode == Mode.MultiOnlineSynchronized) && !network.IsHost)
             isPlayerOne = false;
 
         //To destroy the zeros and crosses
@@ -329,7 +335,7 @@ public class Player : MonoBehaviour
         }
     }
 
-    public void InitGrid (Vector3 gridCenter, float gridSize, Quaternion rotation, GameObject obj)
+    public void InitGrid (Vector3 gridCenter, float gridSize, Quaternion rotation, GameObject obj, int invert = 1)
     {
         cellWidth = gridSize / 3;
 
@@ -343,20 +349,27 @@ public class Player : MonoBehaviour
         gridCenters[2, 1] = new Vector3 (gridCenter.x, gridCenter.y, gridCenter.z + cellWidth);
         gridCenters[2, 2] = new Vector3 (gridCenter.x + cellWidth, gridCenter.y, gridCenter.z + cellWidth);
 
+        Quaternion zero = new Quaternion
+        {
+            w = 1
+        };
+        if (rotation == zero)
+            return;
+
         for (int i = 0; i < 3; i++)
         {
             for (int j = 0; j < 3; j++)
             {
-                gridCenters[i, j] = CorrectCellCenters (obj, gridCenters[i, j], rotation);
+                gridCenters[i, j] = CorrectCellCenters (obj, gridCenters[i, j], rotation, invert);
             }
         }
     }
 
-    private Vector3 CorrectCellCenters (GameObject obj, in Vector3 cellCenter, Quaternion rot)
+    private Vector3 CorrectCellCenters (GameObject obj, in Vector3 cellCenter, Quaternion rot, int invert)
     {
         Vector3 offset = new Vector3 (0.0f, 0.25f, -0.0f);
-        obj.transform.SetPositionAndRotation (cellCenter + offset, rot);
-        obj.transform.RotateAround (gridCenters[1, 1], Vector3.up, rot.eulerAngles.y);
+        obj.transform.SetPositionAndRotation (cellCenter + offset, new Quaternion());
+        obj.transform.RotateAround (gridCenters[1, 1], Vector3.up, rot.eulerAngles.y * invert);
         return obj.transform.position;
     }
 
@@ -368,9 +381,7 @@ public class Player : MonoBehaviour
         {
             for (int j = 0; j < 3; j++)
             {
-                Vector3 originalCenter = gridCenters[i, j];
-                //originalCenter.y = pos.y;
-                float currentDistance = Vector3.Distance(originalCenter, pos);
+                float currentDistance = Vector3.Distance(gridCenters[i, j], pos);
                 if (currentDistance < minDistance && gameLogic.GetCellState (new Vector2Int (i, j)) == State.Empty)
                 {
                     minDistance = currentDistance;
@@ -467,26 +478,7 @@ public class Player : MonoBehaviour
             anchorManager.HostCloudAnchor (anchorManager.AddAnchor (new Pose()));
 
             ARAnchor localAnchor = anchorManager.AddAnchor (new Pose (Grid.transform.position, Grid.transform.rotation));
-            try
-            {
-                cloudAnchor = anchorManager.HostCloudAnchor (localAnchor, 1);
-            }
-            catch (System.Exception e)
-            {
-                ;
-            }
+            cloudAnchor = anchorManager.HostCloudAnchor (localAnchor, 1);
         }
-    }
-
-    private Pose WorldToAnchorPose (Pose pose)
-    {
-        Matrix4x4 anchorTWorld = Matrix4x4.TRS(
-                cloudAnchor.transform.position, cloudAnchor.transform.rotation, Vector3.one).inverse;
-
-        Vector3 position = anchorTWorld.MultiplyPoint(pose.position);
-        Quaternion rotation = pose.rotation * Quaternion.LookRotation(
-                anchorTWorld.GetColumn(2), anchorTWorld.GetColumn(1));
-
-        return new Pose (position, rotation);
     }
 }
