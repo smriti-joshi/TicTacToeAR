@@ -8,6 +8,6 @@ This project was implemented using the Unity Platform and AR Foundation API with
 
 Please find the video below to visualize the game. 
 
-[![img alt description](img_git.jps)](https://photos.google.com/share/AF1QipOs5Lgi4S1DTL4mlSJ9D-DwmIHf3DMt5G4XT2Guse9dl6D6OANhSlqcdV1L8n9l2g?key=VHMtVk5aTWdka1lvTXFjUHFndEU4THZGZTNOX2pn)
+[![img alt description](https://github.com/smriti-joshi/TicTacToeAR/blob/main/img_git.jpg)](https://photos.google.com/share/AF1QipOs5Lgi4S1DTL4mlSJ9D-DwmIHf3DMt5G4XT2Guse9dl6D6OANhSlqcdV1L8n9l2g?key=VHMtVk5aTWdka1lvTXFjUHFndEU4THZGZTNOX2pn)
 
 
