@@ -9,5 +9,6 @@ This project was implemented using the Unity Platform and AR Foundation API with
 Please find the video below to visualize the game. 
 
 [![](https://github.com/smriti-joshi/TicTacToeAR/blob/main/img_git.jpg = 100x20)](https://youtu.be/NMCiR3yJtHE)
+<img src="https://github.com/smriti-joshi/TicTacToeAR/blob/main/img_git.jpg" alt="alt text" width="100" height="20">
 
 
