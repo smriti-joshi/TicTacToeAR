@@ -6,9 +6,9 @@ This game can be launched on any Android phone which supports ARCore. For more i
 
 This project was implemented using the Unity Platform and AR Foundation API with ARCore extension. The scripts implementing the algorithms were written in C#. 
 
-Please find the video below to visualize the game. 
+Please click the image below to visualize the game. 
 
-[<img src="https://github.com/smriti-joshi/TicTacToeAR/blob/main/img_git.jpg" alt="alt text" width="144" height="312">](https://youtu.be/NMCiR3yJtHE)
+[<img src="https://github.com/smriti-joshi/TicTacToeAR/blob/main/img_git.jpg" alt="alt text" width="144" height="312" class="center">](https://youtu.be/NMCiR3yJtHE)
 
 
 
